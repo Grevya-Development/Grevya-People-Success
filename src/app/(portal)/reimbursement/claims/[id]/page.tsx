@@ -99,7 +99,14 @@ export default async function ClaimDetailPage({ params, searchParams }: { params
               </Link>
             )}
             {isOwner && claim.status === "draft" && (
-              <ActionButton action={submitClaim} fields={{ id }} confirm="Submit this claim for approval?" variant="primary">
+              <ActionButton
+                action={submitClaim}
+                fields={{ id }}
+                confirm="Submit this claim for approval?"
+                variant="primary"
+                disabled={!!cat?.requires_receipt && !claim.receipt_path}
+                title={cat?.requires_receipt && !claim.receipt_path ? "Attach a receipt first (Edit draft)" : undefined}
+              >
                 <Send className="h-3.5 w-3.5" />
                 Submit
               </ActionButton>

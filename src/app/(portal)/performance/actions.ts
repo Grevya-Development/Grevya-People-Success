@@ -562,8 +562,8 @@ export async function saveCycle(_prev: ActionState, fd: FormData): Promise<Actio
   if (!isPhase(status)) return fail("Invalid phase");
 
   const supabase = await createClient();
-  const { data: dup } = await supabase.from("review_cycles").select("id").ilike("name", name).maybeSingle();
-  if (dup && dup.id !== cycleId) return fail("A cycle with this name already exists");
+  const { data: dups } = await supabase.from("review_cycles").select("id").ilike("name", name.replace(/[\\%_]/g, "\\$&"));
+  if ((dups ?? []).some((d) => d.id !== cycleId)) return fail("A cycle with this name already exists");
 
   if (cycleId) {
     const { data, error } = await supabase.from("review_cycles").update({ name, start_date: start, end_date: end, status }).eq("id", cycleId).select("id");

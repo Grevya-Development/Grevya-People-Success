@@ -205,7 +205,12 @@ export async function computePayroll(supabase: Client, year: number, month: numb
         notJoined++;
         continue;
       }
-      if (d.date > today) continue; // future days are assumed paid
+      // Today and future days are assumed paid (attendance for today may not be marked yet),
+      // except where an approved unpaid leave already covers them.
+      if (d.date >= today) {
+        lop += lv?.get(d.date)?.unpaid ?? 0;
+        continue;
+      }
       const status = att?.get(d.date);
       const attended = status === "present" || status === "wfh" || status === "on_duty" ? 1 : status === "half_day" ? 0.5 : 0;
       const paidLeave = lv?.get(d.date)?.paid ?? 0;

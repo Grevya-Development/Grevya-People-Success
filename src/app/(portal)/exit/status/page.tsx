@@ -138,7 +138,7 @@ export default async function ResignationStatusPage() {
             }
           />
           <CardBody>
-            {items.length > 0 && <ProgressBar value={(cleared / items.length) * 100} className="mb-2" barClassName={EXIT_THEME.solid} />}
+            {items.length > 0 && <ProgressBar value={(cleared / items.length) * 100} className="mb-2" barClassName={EXIT_THEME.bar} />}
             <ClearanceList items={items} />
           </CardBody>
         </Card>

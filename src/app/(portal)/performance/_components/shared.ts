@@ -95,11 +95,15 @@ export function averageProgress(goals: Pick<Goal, "status" | "weightage" | "prog
   return Math.round(live.reduce((s, g) => s + g.progress, 0) / live.length);
 }
 
+/**
+ * Bar colour for <ProgressBar barClassName>. The `!` is needed because the shared
+ * ProgressBar always adds bg-primary-500 and `cn` does not merge conflicting classes.
+ */
 export function progressColor(p: number) {
-  if (p >= 100) return "bg-emerald-500";
-  if (p >= 60) return "bg-[#4a8ad0]";
-  if (p >= 30) return "bg-amber-400";
-  return "bg-rose-400";
+  if (p >= 100) return "bg-emerald-500!";
+  if (p >= 60) return "bg-[#4a8ad0]!";
+  if (p >= 30) return "bg-amber-400!";
+  return "bg-rose-400!";
 }
 
 export function fmtRating(r: number | string | null | undefined) {

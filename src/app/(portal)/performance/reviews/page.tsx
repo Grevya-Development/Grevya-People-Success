@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Award, Check, ClipboardList, Lock, Target } from "lucide-react";
 import { Card, CardBody, CardHeader, EmptyState, Field, PageHeader, StatusBadge, Textarea, WidgetCard } from "@/components/ui";
-import { ActionForm } from "@/components/ui/action-form";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
@@ -10,6 +9,7 @@ import { CategoryBadge, GoalProgress, PersonCell, Stars } from "../_components/d
 import { IntentSubmit } from "../_components/intent-submit";
 import { StarRatingInput } from "../_components/star-rating";
 import { PERF_THEME, PERSON_COLS, RATING_LABEL, fmtRating, type Goal, type Person } from "../_components/shared";
+import { ResultForm } from "../_components/result-form";
 
 export const metadata = { title: "My Reviews" };
 
@@ -170,7 +170,7 @@ function ReviewView({ review: r, goals }: { review: ReviewRow; goals: Goal[] }) 
           />
           <CardBody>
             {editable ? (
-              <ActionForm action={saveSelfReview} resetOnSuccess={false} className="space-y-5">
+              <ResultForm action={saveSelfReview} className="space-y-5">
                 <input type="hidden" name="id" value={r.id} />
                 <Field label="Overall self rating" required>
                   <StarRatingInput name="self_rating" defaultValue={r.self_rating} label="Overall self rating" />
@@ -192,7 +192,7 @@ function ReviewView({ review: r, goals }: { review: ReviewRow; goals: Goal[] }) 
                     ]}
                   />
                 </div>
-              </ActionForm>
+              </ResultForm>
             ) : (
               <dl className="space-y-4 text-sm">
                 <div>

@@ -69,7 +69,8 @@ export default async function FbpPage() {
               description="Declare how much of your FBP goes to each component. Approved components can be claimed under CTC Reimbursement."
             />
             <CardBody>
-              <FbpForm key={`${decl?.id}-${status}`} components={components} fbpTotal={fbpTotal} readOnly={status !== "draft"} />
+              {/* No status-based key: remounting on submit would drop the ActionForm success toast. */}
+              <FbpForm components={components} fbpTotal={fbpTotal} readOnly={status !== "draft"} />
             </CardBody>
           </Card>
 

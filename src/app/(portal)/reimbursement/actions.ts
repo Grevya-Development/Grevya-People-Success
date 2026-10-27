@@ -94,7 +94,9 @@ export async function saveClaim(_prev: ActionState, fd: FormData): Promise<Actio
     const { data, error } = await supabase.from("claims").update(values).eq("id", id).eq("employee_id", me.id).eq("status", "draft").select("id");
     if (error) return fail(dbError(error));
     if (!data?.length) return fail("Claim could not be updated — it may have changed. Please refresh.");
-    revalidateClaims(id);
+    // Submitting from the edit view: revalidating would re-render ?edit=1 as the read-only view and
+    // unmount the form before it can toast and redirect. The redirect below loads fresh (dynamic) data.
+    if (status === "draft") revalidateClaims(id);
     return ok(status === "submitted" ? "Claim submitted for approval" : "Draft saved", `/reimbursement/claims/${id}`);
   }
 

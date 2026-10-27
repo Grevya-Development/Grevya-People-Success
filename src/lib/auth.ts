@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/database.types";
 
-export type Role = "employee" | "manager" | "hr_admin";
+export type Role = "employee" | "manager" | "hr_admin" | "super_admin";
 
 export type CurrentEmployee = Tables<"employees"> & {
   department: { name: string } | null;
@@ -15,7 +15,10 @@ export type CurrentEmployee = Tables<"employees"> & {
   reportCount: number;
   /** HR, or has at least one direct report */
   isManager: boolean;
+  /** HR admin or Super Admin */
   isHR: boolean;
+  /** Owns user accounts and admin rights */
+  isSuperAdmin: boolean;
 };
 
 /** Signed-in employee for this request (deduplicated per request). */
@@ -42,11 +45,13 @@ export const getCurrentEmployee = cache(async (): Promise<CurrentEmployee | null
     .neq("status", "exited");
 
   const reportCount = count ?? 0;
-  const isHR = emp.role === "hr_admin";
+  const isSuperAdmin = emp.role === "super_admin";
+  const isHR = isSuperAdmin || emp.role === "hr_admin";
   return {
     ...(emp as unknown as CurrentEmployee),
     reportCount,
     isHR,
+    isSuperAdmin,
     isManager: isHR || emp.role === "manager" || reportCount > 0,
   };
 });
@@ -74,6 +79,12 @@ export async function requireManager(): Promise<CurrentEmployee> {
 export async function requireHR(): Promise<CurrentEmployee> {
   const me = await requireEmployee();
   if (!me.isHR) redirect("/home?denied=1");
+  return me;
+}
+
+export async function requireSuperAdmin(): Promise<CurrentEmployee> {
+  const me = await requireEmployee();
+  if (!me.isSuperAdmin) redirect("/home?denied=1");
   return me;
 }
 

@@ -19,7 +19,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
 
   return (
     <PortalShell
-      viewer={{ isManager: me.isManager, isHR: me.isHR }}
+      viewer={{ isManager: me.isManager, isHR: me.isHR, isSuperAdmin: me.isSuperAdmin }}
       user={{ name: me.full_name ?? me.first_name, avatarUrl: me.avatar_url, designation: me.designation?.title ?? null, code: me.employee_code }}
       favorites={(favs.data ?? []).map((f) => f.module_key)}
       addons={addons.data ?? []}

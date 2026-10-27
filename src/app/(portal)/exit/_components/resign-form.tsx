@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { differenceInCalendarDays, parseISO, isValid } from "date-fns";
 import { AlertTriangle, Info } from "lucide-react";
-import { ActionForm, SubmitButton } from "@/components/ui/action-form";
+import { SubmitButton } from "@/components/ui/action-form";
 import { Field, FormGrid, Input, Select, Textarea, Checkbox } from "@/components/ui/form";
 import { formatDate } from "@/lib/utils";
 import { submitResignation } from "../actions";
 import { NOTICE_PERIOD_DAYS, REASON_CATEGORIES } from "./shared";
+import { ResultForm } from "./result-form";
 
 export function ResignForm({ today, defaultLastDay }: { today: string; defaultLastDay: string }) {
   const [lastDay, setLastDay] = useState(defaultLastDay);
@@ -19,14 +20,9 @@ export function ResignForm({ today, defaultLastDay }: { today: string; defaultLa
   const invalid = days !== null && days <= 0;
 
   return (
-    <ActionForm
-      action={submitResignation}
-      className="space-y-5"
-      onSuccess={() => {
-        setLastDay(defaultLastDay);
-        setReason("");
-      }}
-    >
+    // On success the page swaps this form for the resignation status, so the
+    // result is handled by ResultForm (toast + redirect) rather than ActionForm.
+    <ResultForm action={submitResignation} className="space-y-5">
       <FormGrid>
         <Field label="Reason category" htmlFor="reason_category" required>
           <Select id="reason_category" name="reason_category" required defaultValue="">
@@ -111,6 +107,6 @@ export function ResignForm({ today, defaultLastDay }: { today: string; defaultLa
           Submit resignation
         </SubmitButton>
       </div>
-    </ActionForm>
+    </ResultForm>
   );
 }

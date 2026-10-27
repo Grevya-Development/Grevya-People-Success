@@ -50,7 +50,6 @@ export default async function InvestmentsPage() {
           }
         />
         <InvestmentForm
-          key={`${decl?.id}-${status}`}
           items={parseInvestmentItems(decl?.items)}
           regime={decl && isRegime(decl.regime) ? decl.regime : "new"}
           salary={salary}

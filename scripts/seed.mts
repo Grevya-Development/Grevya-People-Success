@@ -3,7 +3,7 @@
  *
  *   npm run seed              demo organisation (18 employees + data in every module)
  *   npm run seed -- --reset   wipe ALL app data and demo logins first, then seed demo
- *   npm run seed -- --minimal reference data only + one HR admin login
+ *   npm run seed -- --minimal reference data only + the first Super Admin login
  *                             (set ADMIN_EMAIL / ADMIN_PASSWORD / ADMIN_NAME env vars)
  *
  * Reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env.local.
@@ -178,12 +178,12 @@ async function seedMinimal() {
   if (!existing) {
     const [dept] = await ins<{ id: string }>("departments", { name: "Human Resources", code: "HR" });
     const [emp] = await ins<{ id: string }>("employees", {
-      employee_code: "GRV0001", first_name: first, last_name: rest.join(" "), email, role: "hr_admin", department_id: dept.id,
+      employee_code: "GRV0001", first_name: first, last_name: rest.join(" "), email, role: "super_admin", department_id: dept.id,
     });
     await ins("employee_private", { employee_id: emp.id });
   }
   await createLogin(email, password);
-  console.log(`HR admin ready: ${email}`);
+  console.log(`Super Admin ready: ${email}`);
 }
 
 // ---------- demo ----------
@@ -212,7 +212,7 @@ async function seedDemo() {
   const titles = [
     ["Chief Executive Officer", 10], ["Director - Engineering", 8], ["Engineering Manager", 6], ["Senior AI Engineer", 5], ["AI Engineer", 4],
     ["Software Engineer", 3], ["Software Engineer Intern", 1], ["Head - People Success", 8], ["HR Executive", 3], ["Finance Manager", 6],
-    ["Accountant", 3], ["Sales Manager", 6], ["Sales Executive", 3], ["Product Designer", 4],
+    ["Accountant", 3], ["Sales Manager", 6], ["Sales Executive", 3], ["Product Designer", 4], ["System Administrator", 7],
   ] as const;
   const desigs = await ins<{ id: string; title: string }>("designations", titles.map(([title, level]) => ({ title, level })));
   const T = Object.fromEntries(desigs.map((d) => [d.title, d.id]));
@@ -226,7 +226,7 @@ async function seedDemo() {
 
   type Spec = {
     key: string; first: string; last: string; email: string; title: string; dept: string; loc: string; mgr?: string;
-    role?: "employee" | "manager" | "hr_admin"; doj: string; dob: string; gender: "male" | "female"; type?: string; ctc: number; blood?: string;
+    role?: "employee" | "manager" | "hr_admin" | "super_admin"; doj: string; dob: string; gender: "male" | "female"; type?: string; ctc: number; blood?: string;
   };
   const specs: Spec[] = [
     { key: "arjun", first: "Arjun", last: "Mehta", email: "arjun@grevya.com", title: "Chief Executive Officer", dept: "LDR", loc: "Bangalore", role: "manager", doj: "2019-04-01", dob: "1980-02-11", gender: "male", ctc: 9000000, blood: "O+" },
@@ -246,6 +246,7 @@ async function seedDemo() {
     { key: "meera", first: "Meera", last: "Joshi", email: "meera@grevya.com", title: "Accountant", dept: "FIN", loc: "Bangalore", mgr: "deepak", doj: "2024-11-04", dob: "1997-08-30", gender: "female", ctc: 800000 },
     { key: "karthik", first: "Karthik", last: "Subramanian", email: "karthik@grevya.com", title: "Sales Manager", dept: "SAL", loc: "Chennai", mgr: "arjun", role: "manager", doj: "2021-06-21", dob: "1987-02-26", gender: "male", ctc: 2800000 },
     { key: "aisha", first: "Aisha", last: "Khan", email: "aisha@grevya.com", title: "Sales Executive", dept: "SAL", loc: "Chennai", mgr: "karthik", doj: "2024-03-18", dob: "1998-07-07", gender: "female", ctc: 900000 },
+    { key: "admin", first: "Grevya", last: "Admin", email: "admin@grevya.com", title: "System Administrator", dept: "HR", loc: "Bangalore", mgr: "arjun", role: "super_admin", doj: "2019-04-01", dob: "1990-01-01", gender: "male", ctc: 2000000 },
     { key: "rohan", first: "Rohan", last: "Gupta", email: "rohan@grevya.com", title: "Sales Executive", dept: "SAL", loc: "Chennai", mgr: "karthik", doj: "2023-08-07", dob: "1996-11-19", gender: "male", ctc: 950000 },
   ];
 
@@ -608,6 +609,7 @@ async function seedDemo() {
   ]);
 
   console.log("\nDemo data ready. Sign in with any of:");
+  console.log("  admin@grevya.com   (Super Admin — accounts & roles)");
   console.log("  hr@grevya.com      (HR admin)");
   console.log("  kavin@grevya.com   (manager)");
   console.log("  priya@grevya.com   (employee)");

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useActionState, useContext, useEffect, useRef, startTransition, type ReactNode } from "react";
+import { createContext, useContext, useRef, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -16,6 +16,8 @@ const PendingContext = createContext(false);
  * Form wired to a server action `(prev, formData) => ActionState`.
  * Shows a toast on success/error, keeps input on error, resets on success,
  * follows `redirectTo`, and closes the surrounding <Dialog> on success.
+ * The result is handled right after the action returns, so it still works
+ * when the action's revalidation replaces or unmounts this form.
  */
 export function ActionForm({
   action,
@@ -37,21 +39,7 @@ export function ActionForm({
   const router = useRouter();
   const dialog = useDialog();
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, pending] = useActionState(action, null);
-
-  useEffect(() => {
-    if (!state) return;
-    if (state.ok) {
-      toast.success(state.message ?? successMessage ?? "Saved successfully");
-      if (resetOnSuccess) formRef.current?.reset();
-      dialog?.close();
-      onSuccess?.(state);
-      if (state.redirectTo) router.push(state.redirectTo);
-    } else if (state.error) {
-      toast.error(state.error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  const [pending, startTransition] = useTransition();
 
   return (
     <PendingContext.Provider value={pending}>
@@ -61,8 +49,29 @@ export function ActionForm({
         className={className}
         onSubmit={(e) => {
           e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          startTransition(() => formAction(fd));
+          const form = e.currentTarget;
+          // Include the clicked submit button's name/value (e.g. intent=draft|submit).
+          const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+          const fd = submitter?.name ? new FormData(form, submitter) : new FormData(form);
+          startTransition(async () => {
+            let state: ActionState;
+            try {
+              state = await action(null, fd);
+            } catch (err) {
+              toast.error(err instanceof Error && err.message ? err.message : "Something went wrong");
+              return;
+            }
+            if (!state) return;
+            if (state.ok) {
+              toast.success(state.message ?? successMessage ?? "Saved successfully");
+              if (resetOnSuccess) formRef.current?.reset();
+              dialog?.close();
+              onSuccess?.(state);
+              if (state.redirectTo) router.push(state.redirectTo);
+            } else if (state.error) {
+              toast.error(state.error);
+            }
+          });
         }}
       >
         {children}

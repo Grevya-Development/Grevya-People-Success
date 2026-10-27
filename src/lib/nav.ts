@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type Audience = "all" | "manager" | "hr";
+export type Audience = "all" | "manager" | "hr" | "super";
 
 export type NavLeaf = {
   key: string;
@@ -236,6 +236,7 @@ export const MODULES: NavModule[] = [
     audience: "hr",
     theme: t("bg-[#e0e7ff]", "hover:bg-[#cfd9fe]", "text-[#3730a3]", "bg-[#4f46e5]"),
     items: [
+      { key: "admin.accounts", label: "User Accounts & Roles", href: "/admin/accounts", audience: "super" },
       { key: "admin.employees", label: "Employees", href: "/hris/employees" },
       { key: "admin.org", label: "Departments & Locations", href: "/admin/org" },
       { key: "admin.letters", label: "Letters & Contracts", href: "/hris/admin/letters" },
@@ -254,11 +255,12 @@ export const MODULES: NavModule[] = [
   },
 ];
 
-export type Viewer = { isManager: boolean; isHR: boolean };
+export type Viewer = { isManager: boolean; isHR: boolean; isSuperAdmin?: boolean };
 
 export function canSee(audience: Audience | undefined, v: Viewer) {
   if (!audience || audience === "all") return true;
   if (audience === "manager") return v.isManager;
+  if (audience === "super") return !!v.isSuperAdmin;
   return v.isHR;
 }
 

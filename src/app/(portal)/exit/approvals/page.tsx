@@ -25,11 +25,12 @@ import {
   Textarea,
 } from "@/components/ui";
 import { ActionButton } from "@/components/ui/action-button";
-import { ActionForm, SubmitButton } from "@/components/ui/action-form";
+import { SubmitButton } from "@/components/ui/action-form";
 import { Dialog } from "@/components/ui/dialog";
 import { LinkTabs } from "@/components/ui/link-tabs";
 import { completeExit, hrApproveResignation, managerApproveResignation, rejectResignation } from "../actions";
 import { ClearanceList } from "../_components/clearance-list";
+import { ResultForm } from "../_components/result-form";
 import { EXIT_THEME, MANAGER_CLEARANCE, type ExitEmployee, type ResignationRow } from "../_components/shared";
 
 export const metadata = { title: "Exit Approvals" };
@@ -140,7 +141,7 @@ export default async function ExitApprovalsPage({ searchParams }: { searchParams
                           description="The clearance checklist starts and the employee moves to notice period."
                           size="sm"
                         >
-                          <ActionForm action={hrApproveResignation} className="space-y-4">
+                          <ResultForm action={hrApproveResignation} className="space-y-4">
                             <input type="hidden" name="id" value={r.id} />
                             <Field
                               label="Approved last working day"
@@ -163,7 +164,7 @@ export default async function ExitApprovalsPage({ searchParams }: { searchParams
                             <div className="flex justify-end">
                               <SubmitButton variant="success">Approve resignation</SubmitButton>
                             </div>
-                          </ActionForm>
+                          </ResultForm>
                         </Dialog>
                       </>
                     ) : (
@@ -221,7 +222,7 @@ export default async function ExitApprovalsPage({ searchParams }: { searchParams
                           {cleared}/{items.length} cleared
                         </span>
                       </div>
-                      <ProgressBar value={items.length ? (cleared / items.length) * 100 : 0} barClassName={allCleared ? "bg-emerald-500" : EXIT_THEME.solid} />
+                      <ProgressBar value={items.length ? (cleared / items.length) * 100 : 0} barClassName={allCleared ? "bg-emerald-500!" : EXIT_THEME.bar} />
                     </div>
                     <ClearanceList
                       items={items}

@@ -1,8 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 import { format, parseISO, isValid } from "date-fns";
 
+/** Join class names; later Tailwind classes override conflicting earlier ones. */
 export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs);
+  return twMerge(clsx(inputs));
 }
 
 type DateInput = string | Date | null | undefined;

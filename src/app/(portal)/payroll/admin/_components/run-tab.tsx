@@ -49,7 +49,7 @@ export async function RunTab({ year, month, period, today }: { year: number; mon
         </div>
         {isCurrentMonth && runnable && (
           <p className="mt-3 text-xs text-slate-500">
-            {label} is still in progress — LOP is counted only up to today; remaining working days are assumed paid.
+            {label} is still in progress — LOP is counted from attendance up to yesterday; today and later working days are assumed paid (unless covered by unpaid leave).
           </p>
         )}
       </Card>

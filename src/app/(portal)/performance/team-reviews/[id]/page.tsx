@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Award, Hourglass, Target } from "lucide-react";
 import { Avatar, Card, CardBody, CardHeader, EmptyState, Field, PageHeader, StatusBadge, Textarea, WidgetCard } from "@/components/ui";
-import { ActionForm } from "@/components/ui/action-form";
 import { requireManager } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
@@ -11,6 +10,7 @@ import { CategoryBadge, GoalProgress, Stars } from "../../_components/display";
 import { IntentSubmit } from "../../_components/intent-submit";
 import { StarRatingInput } from "../../_components/star-rating";
 import { PERF_THEME, PERSON_COLS, RATING_LABEL, averageProgress, fmtRating, type Goal, type Person } from "../../_components/shared";
+import { ResultForm } from "../../_components/result-form";
 
 export const metadata = { title: "Team review" };
 
@@ -133,7 +133,7 @@ export default async function TeamReviewPage({ params }: { params: Promise<{ id:
             <Card className="overflow-hidden">
               <div className={cn("px-5 py-3 text-sm font-semibold text-white", PERF_THEME.solid)}>Manager assessment</div>
               <CardBody>
-                <ActionForm action={saveManagerReview} resetOnSuccess={false} className="space-y-5">
+                <ResultForm action={saveManagerReview} className="space-y-5">
                   <input type="hidden" name="id" value={r.id} />
                   <Field label="Manager rating" required>
                     <StarRatingInput name="manager_rating" defaultValue={r.manager_rating} label="Manager rating" />
@@ -153,7 +153,7 @@ export default async function TeamReviewPage({ params }: { params: Promise<{ id:
                     />
                     {!selfSubmitted && <p className="mt-2 text-right text-xs text-slate-500">You can complete the review after the self-assessment is submitted.</p>}
                   </div>
-                </ActionForm>
+                </ResultForm>
               </CardBody>
             </Card>
           ) : (

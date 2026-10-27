@@ -26,6 +26,8 @@ export const EXIT_THEME = {
   pill: "bg-[#f7dcd8]",
   text: "text-[#b2463a]",
   solid: "bg-[#d9675a]",
+  /** For <ProgressBar barClassName>: `!` beats the bar's built-in bg-primary-500 (cn does not merge classes). */
+  bar: "bg-[#d9675a]!",
 };
 
 export type ClearanceRow = Pick<Tables<"exit_clearances">, "id" | "department" | "status" | "remarks" | "cleared_at"> & {
