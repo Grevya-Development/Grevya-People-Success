@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# People Success
 
-## Getting Started
+Grevya's employee portal — HRIS, Performance, Exit, Leave, Attendance, Payroll, Reimbursement, Learning, Recruit, Directory, HR Helpdesk, Declarations and an HR Admin console.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage, Row Level Security).
+
+## Run locally
+
+Requirements: Node 20+, Docker (OrbStack / Docker Desktop).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run db:start            # local Supabase on ports 554xx (Studio: http://127.0.0.1:55423)
+npm run seed                # demo organisation (add -- --reset to wipe & reseed)
+npm run dev                 # http://localhost:3100
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Demo logins (password `Grevya@123`): `hr@grevya.com` (HR admin), `kavin@grevya.com` (manager), `priya@grevya.com` (employee). Every seeded employee can sign in with `<firstname>@grevya.com`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Connect your hosted Supabase project
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push the schema:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   npx supabase db push          # applies supabase/migrations/*
+   ```
+2. Put your keys in `.env.local` (see `.env.example`):
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
+   SUPABASE_SERVICE_ROLE_KEY=<service role key>   # server only
+   ```
+3. Seed either the demo org (`npm run seed`) or just reference data + your first HR admin:
+   ```bash
+   ADMIN_EMAIL=you@grevya.com ADMIN_PASSWORD='choose-one' ADMIN_NAME='Your Name' npm run seed -- --minimal
+   ```
+4. In Supabase → Authentication → URL configuration, set the Site URL to your deployed URL and add `<your-url>/auth/callback` to redirect URLs (used by password reset).
 
-## Learn More
+### This project
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` already points at the hosted project `oxhhwasktpgxwccwbypa` (region ap-southeast-2) and includes `SUPABASE_DB_URL`, so:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev                        # app on http://localhost:3100 using the hosted DB
+set -a; . ./.env.local; set +a
+npm run db:push                    # apply any new migrations to the hosted DB
+npm run smoke -- hr@grevya.com     # request every page as a role (dev server must be running)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## How access works
 
-## Deploy on Vercel
+Security is enforced in the database (Row Level Security + triggers), not just the UI:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Employees** see and act on their own records.
+- **Managers** (anyone with reports) also see and approve their reporting chain.
+- **HR admins** (`role = 'hr_admin'`) see and manage everything.
+- Approval statuses can only be set by an approver; side effects (leave balance updates, attendance on regularization approval, comp-off credits, exit clearance, notifications) run as database triggers.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+HR adds people in **HR Admin → Employees** and can create their login there. Anyone who signs up with an email that matches an employee record is linked automatically.
+
+## Project layout
+
+```
+supabase/migrations/      schema, RLS policies, workflow triggers
+scripts/seed.mts          demo / minimal seed
+src/proxy.ts              session refresh + auth redirect
+src/lib/                  supabase clients, auth helpers, nav map, utils
+src/components/ui/        UI kit
+src/components/shell/     header, sidebar flyouts, search, notifications
+src/app/(portal)/<module> one folder per module (pages, actions.ts, _components)
+docs/CONVENTIONS.md       coding conventions
+```
