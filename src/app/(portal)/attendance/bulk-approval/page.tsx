@@ -62,7 +62,7 @@ export default async function BulkApprovalPage({ searchParams }: { searchParams:
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] lg:items-start">
           <div className="space-y-1">
             <EmployeeCell name={emp?.full_name} code={emp?.employee_code} avatar={emp?.avatar_url} size="md" />
-            <p className="text-xs text-slate-400">Applied {longDate(r.created_at.slice(0, 10))}</p>
+            <p className="text-xs text-slate-400">Applied {longDate(r.created_at)}</p>
           </div>
           <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -101,7 +101,7 @@ export default async function BulkApprovalPage({ searchParams }: { searchParams:
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] lg:items-start">
           <div className="space-y-1">
             <EmployeeCell name={emp?.full_name} code={emp?.employee_code} avatar={emp?.avatar_url} size="md" />
-            <p className="text-xs text-slate-400">Applied {longDate(c.created_at.slice(0, 10))}</p>
+            <p className="text-xs text-slate-400">Applied {longDate(c.created_at)}</p>
           </div>
           <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">

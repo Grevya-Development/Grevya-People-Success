@@ -51,7 +51,7 @@ export default async function RegularizationPage({ searchParams }: { searchParam
         description="Fix missed or wrong punches, or record WFH / on-duty days from the last 30 days."
         breadcrumbs={[{ label: "Attendance", href: "/attendance" }, { label: "My Regularization" }]}
       />
-      <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         <Card className="h-fit overflow-hidden">
           <div className="h-1.5 bg-[#e3a91a]" />
           <CardHeader title="New request" description={prefill ? `For ${DOW_SHORT[dayOfWeek(prefill)]}, ${longDate(prefill)}` : "Goes to your manager for approval"} />
@@ -115,7 +115,7 @@ export default async function RegularizationPage({ searchParams }: { searchParam
                     <TR key={r.id}>
                       <TD className="whitespace-nowrap">
                         <span className="font-medium text-slate-800">{longDate(r.date)}</span>
-                        <span className="block text-xs text-slate-400">Applied {longDate(r.created_at.slice(0, 10))}</span>
+                        <span className="block text-xs text-slate-400">Applied {longDate(r.created_at)}</span>
                       </TD>
                       <TD className="whitespace-nowrap">{humanize(r.request_type)}</TD>
                       <TD className="whitespace-nowrap text-xs">

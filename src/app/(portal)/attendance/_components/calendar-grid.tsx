@@ -29,7 +29,7 @@ export function CalendarGrid({ days, initial }: { days: CalendarDay[]; initial: 
   const lead = days[0]?.dow ?? 0;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       <div>
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400 sm:gap-2">
           {DOW.map((d) => (

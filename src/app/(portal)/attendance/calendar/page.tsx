@@ -30,7 +30,11 @@ export default async function AttendanceCalendarPage({ searchParams }: { searchP
   }
   const viewingOther = subject.id !== me.id;
 
-  const { days } = await getAttendanceDays(supabase, subject, start, end, today);
+  const [{ days }, { data: pendingRegs }] = await Promise.all([
+    getAttendanceDays(supabase, subject, start, end, today),
+    supabase.from("regularization_requests").select("date").eq("employee_id", subject.id).eq("status", "pending").gte("date", start).lte("date", end),
+  ]);
+  const pendingDates = new Set((pendingRegs ?? []).map((r) => r.date));
   const stats = summarize(days);
   const regStart = addDays(today, -30);
 
@@ -44,8 +48,15 @@ export default async function AttendanceCalendarPage({ searchParams }: { searchP
     checkOut: istTime(d.record?.check_out),
     hours: formatHours(d.hours),
     late: d.late,
-    note: d.holiday ? d.holiday.name : d.leave ? `${d.leave.type_name ?? "Leave"}${d.leave.half_day ? " (half day)" : ""}` : d.record?.notes ?? null,
-    regularizeHref: !viewingOther && d.needsRegularization && d.date >= regStart && d.date < today ? `/attendance/regularization?date=${d.date}` : null,
+    note: d.holiday
+      ? d.holiday.name
+      : d.leave
+        ? `${d.leave.type_name ?? "Leave"}${d.leave.half_day ? " (half day)" : ""}`
+        : pendingDates.has(d.date)
+          ? "Regularization pending approval"
+          : (d.record?.notes ?? null),
+    regularizeHref:
+      !viewingOther && d.needsRegularization && !pendingDates.has(d.date) && d.date >= regStart && d.date < today ? `/attendance/regularization?date=${d.date}` : null,
     isToday: d.date === today,
     future: d.future,
   }));

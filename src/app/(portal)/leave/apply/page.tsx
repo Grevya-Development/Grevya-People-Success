@@ -50,7 +50,7 @@ export default async function ApplyLeavePage() {
           </Link>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="overflow-hidden">
           <div className="h-1.5 bg-[#ec7a35]" />
           <CardHeader title="Leave request" description="Weekends and holidays inside the range are not counted." />

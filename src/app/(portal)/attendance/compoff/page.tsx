@@ -44,7 +44,7 @@ export default async function CompoffPage() {
         description="Worked on a weekend or holiday? Claim compensatory leave within 60 days."
         breadcrumbs={[{ label: "Attendance", href: "/attendance" }, { label: "Apply Compoff" }]}
       />
-      <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         <div className="space-y-6">
           {balance ? (
             <BalanceCard b={balance} />
@@ -127,7 +127,7 @@ export default async function CompoffPage() {
                         <span className="font-medium text-slate-800">{longDate(r.worked_date)}</span>
                         <span className="block text-xs text-slate-400">
                           {holidayMap.get(r.worked_date) ?? (isWeekend(r.worked_date) ? "Weekend" : "")}
-                          {" · "}Applied {longDate(r.created_at.slice(0, 10))}
+                          {" · "}Applied {longDate(r.created_at)}
                         </span>
                       </TD>
                       <TD className="text-right">

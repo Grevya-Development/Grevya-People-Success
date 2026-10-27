@@ -21,13 +21,15 @@ export default async function AttendanceHomePage() {
   const weekStart = addDays(today, -6);
   const from = weekStart < start ? weekStart : start;
 
-  const [{ data: todayRecord }, { shift, days }, { count: pendingReg }, { count: pendingComp }] = await Promise.all([
+  const [{ data: todayRecord }, { shift, days }, { data: pendingRegs }, { count: pendingComp }] = await Promise.all([
     supabase.from("attendance_records").select("*").eq("employee_id", me.id).eq("date", today).maybeSingle(),
     getAttendanceDays(supabase, me, from, today, today),
-    supabase.from("regularization_requests").select("id", { count: "exact", head: true }).eq("employee_id", me.id).eq("status", "pending"),
+    supabase.from("regularization_requests").select("date").eq("employee_id", me.id).eq("status", "pending"),
     supabase.from("compoff_requests").select("id", { count: "exact", head: true }).eq("employee_id", me.id).eq("status", "pending"),
   ]);
 
+  const pendingRegDates = new Set((pendingRegs ?? []).map((r) => r.date));
+  const pendingReg = pendingRegDates.size;
   const monthDays = days.filter((d) => d.date >= start);
   const stats = summarize(monthDays);
   const last7 = days.filter((d) => d.date >= weekStart).reverse();
@@ -54,7 +56,7 @@ export default async function AttendanceHomePage() {
         breadcrumbs={[{ label: "Attendance", href: "/attendance" }, { label: "Attendance Home" }]}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-6">
           <PunchCard today={todayRecord} />
           <Card>
@@ -111,7 +113,9 @@ export default async function AttendanceHomePage() {
                     </span>
                     <span className="w-16 text-right font-medium text-slate-700">{formatHours(d.hours)}</span>
                   </div>
-                  {d.needsRegularization && d.date !== today && (
+                  {pendingRegDates.has(d.date) ? (
+                    <span className="text-xs font-medium text-blue-600">Regularization pending</span>
+                  ) : d.needsRegularization && d.date !== today && (
                     <Link href={`/attendance/regularization?date=${d.date}`} className="text-xs font-medium text-primary-600 hover:underline">
                       Regularize
                     </Link>

@@ -197,7 +197,7 @@ async function MyLeave({
                         {r.reason}
                       </p>
                     </TD>
-                    <TD className="whitespace-nowrap text-slate-500">{longDate(r.created_at.slice(0, 10))}</TD>
+                    <TD className="whitespace-nowrap text-slate-500">{longDate(r.created_at)}</TD>
                     <TD>
                       <StatusBadge status={r.status} />
                     </TD>

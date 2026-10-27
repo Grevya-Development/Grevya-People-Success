@@ -98,7 +98,7 @@ async function Pending({ meId }: { meId: string }) {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] lg:items-start">
           <div className="space-y-2">
             <EmployeeCell name={emp?.full_name} code={emp?.employee_code} avatar={emp?.avatar_url} size="md" />
-            <p className="text-xs text-slate-400">Applied {longDate(r.created_at.slice(0, 10))}</p>
+            <p className="text-xs text-slate-400">Applied {longDate(r.created_at)}</p>
           </div>
           <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -205,7 +205,7 @@ async function History({ meId }: { meId: string }) {
                     <StatusBadge status={r.status} />
                   </TD>
                   <TD className="whitespace-nowrap text-xs text-slate-500">
-                    {longDate(r.actioned_at?.slice(0, 10))}
+                    {longDate(r.actioned_at)}
                     {approver?.full_name && <span className="block text-slate-400">by {approver.full_name}</span>}
                   </TD>
                   <TD className="max-w-[16rem] text-xs text-slate-500">{r.approver_remarks || "—"}</TD>

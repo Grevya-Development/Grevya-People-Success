@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
-import { CheckCircle2, House, LogIn, LogOut, MapPin } from "lucide-react";
+import { toast } from "sonner";
+import { CheckCircle2, House, Loader2, LogIn, LogOut, MapPin } from "lucide-react";
 import type { Tables } from "@/lib/database.types";
-import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { ActionButton } from "@/components/ui/action-button";
-import { Card } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { punchIn, punchOut } from "../actions";
 
@@ -47,6 +47,16 @@ export function PunchCard({ today }: { today: Tables<"attendance_records"> | Pun
   const nowSec = useNowSeconds();
   const now = nowSec === null ? null : nowSec * 1000;
   const [mode, setMode] = useState<"office" | "remote">("office");
+  const [punching, startPunch] = useTransition();
+
+  // Toast from the transition callback rather than an effect: a successful
+  // check-in revalidates the page, which unmounts this form immediately.
+  const checkIn = (fd: FormData) =>
+    startPunch(async () => {
+      const res = await punchIn(null, fd);
+      if (res?.ok) toast.success(res.message ?? "Checked in");
+      else toast.error(res?.error ?? "Couldn't check in — please try again");
+    });
 
   const checkedIn = !!today?.check_in;
   const checkedOut = !!today?.check_out;
@@ -75,7 +85,13 @@ export function PunchCard({ today }: { today: Tables<"attendance_records"> | Pun
         </div>
 
         {!checkedIn && (
-          <ActionForm action={punchIn} successMessage="Checked in" resetOnSuccess={false} className="mt-4 flex flex-1 flex-col justify-end gap-3">
+          <form
+            className="mt-4 flex flex-1 flex-col justify-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!punching) checkIn(new FormData(e.currentTarget));
+            }}
+          >
             <div role="radiogroup" aria-label="Work location" className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
               {(
                 [
@@ -96,11 +112,11 @@ export function PunchCard({ today }: { today: Tables<"attendance_records"> | Pun
                 </label>
               ))}
             </div>
-            <SubmitButton variant="success" size="lg" className="w-full">
-              <LogIn className="h-4 w-4" /> Check In
-            </SubmitButton>
+            <Button type="submit" variant="success" size="lg" className="w-full" disabled={punching}>
+              {punching ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />} Check In
+            </Button>
             <p className="text-center text-[11px] text-slate-400">{mode === "remote" ? "You'll be marked as working from home." : "You'll be marked present in office."}</p>
-          </ActionForm>
+          </form>
         )}
 
         {checkedIn && !checkedOut && (

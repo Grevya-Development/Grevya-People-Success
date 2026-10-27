@@ -56,10 +56,18 @@ export function shortDay(iso: string) {
   return `${DOW_SHORT[d.getUTCDay()]}, ${String(d.getUTCDate()).padStart(2, "0")} ${MON_SHORT[d.getUTCMonth()]}`;
 }
 
-/** "27 Oct 2026" */
+/** yyyy-MM-dd of a timestamp in India time (a UTC timestamp before 05:30 is still "yesterday" in UTC). */
+export function istDate(ts: string): string {
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? ts.slice(0, 10) : new Intl.DateTimeFormat("en-CA", { timeZone: ORG_TZ }).format(d);
+}
+
+/** "27 Oct 2026" — accepts a yyyy-MM-dd date or a full timestamp (shown in India time). */
 export function longDate(iso: string | null | undefined) {
-  if (!iso || !isISODate(iso.slice(0, 10))) return "—";
-  const d = toUTC(iso.slice(0, 10));
+  if (!iso) return "—";
+  const day = iso.length > 10 ? istDate(iso) : iso;
+  if (!isISODate(day)) return "—";
+  const d = toUTC(day);
   return `${String(d.getUTCDate()).padStart(2, "0")} ${MON_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
