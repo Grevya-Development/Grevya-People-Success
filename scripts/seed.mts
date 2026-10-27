@@ -789,6 +789,9 @@ function newRegimeTax(taxable: number) {
     if (args.has("--reset")) await reset();
     if (args.has("--minimal")) await seedMinimal();
     else await seedDemo();
+    // Logo used by the branded auth emails (public bucket; cleared by --reset)
+    const { readFileSync } = await import("node:fs");
+    await db.storage.from("avatars").upload("branding/grevya-logo.png", readFileSync("public/email-logo.png"), { contentType: "image/png", upsert: true });
   } catch (e) {
     console.error("\nSeed failed:", e instanceof Error ? e.message : e);
     process.exit(1);

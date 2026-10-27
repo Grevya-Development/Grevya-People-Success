@@ -17,6 +17,7 @@ const SHARDS = [
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
   const next = typeof sp.next === "string" ? sp.next : undefined;
+  const linkError = sp.error === "link";
   return (
     <div className="flex min-h-screen bg-white">
       <section className="relative hidden flex-1 overflow-hidden bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950 lg:flex">
@@ -56,6 +57,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <Image src="/grevya-logo.png" alt="Grevya" width={120} height={60} className="h-10 w-auto" priority />
             <span className="border-l border-slate-200 pl-3 text-sm font-semibold text-slate-600">People Success</span>
           </div>
+          {linkError && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              That link has expired or was already used. Use <strong>Forgot password?</strong> below to get a new one.
+            </div>
+          )}
           <LoginForm next={next} showDemo={process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_SHOW_DEMO === "true"} />
           <p className="mt-10 text-center text-xs text-slate-400">© {new Date().getFullYear()} Grevya · People Success</p>
         </div>
