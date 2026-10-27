@@ -1,6 +1,12 @@
 /** Shared (client + server safe) constants and types for the Employee List module. */
 
-export const ROLES = ["employee", "manager", "hr_admin"] as const;
+export const ROLES = ["employee", "manager", "hr_admin", "super_admin"] as const;
+/** Roles only a Super Admin may grant or remove (also enforced by the DB guard). */
+export const ADMIN_ROLES: readonly string[] = ["hr_admin", "super_admin"];
+export const isAdminRole = (role: string | null | undefined) => !!role && ADMIN_ROLES.includes(role);
+export function roleTone(role: string) {
+  return role === "super_admin" ? "red" : role === "hr_admin" ? "purple" : role === "manager" ? "blue" : "gray";
+}
 export const STATUSES = ["active", "notice_period", "exited"] as const;
 export const EMPLOYMENT_TYPES = ["full_time", "part_time", "contract", "intern"] as const;
 export const GENDERS = ["male", "female", "other"] as const;
@@ -9,6 +15,7 @@ export const ROLE_LABELS: Record<string, string> = {
   employee: "Employee",
   manager: "Manager",
   hr_admin: "HR Admin",
+  super_admin: "Super Admin",
 };
 
 export type Option = { id: string; label: string };

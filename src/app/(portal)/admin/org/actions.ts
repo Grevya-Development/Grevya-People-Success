@@ -28,6 +28,23 @@ async function usage(supabase: Awaited<ReturnType<typeof createClient>>, column:
   return count ?? 0;
 }
 
+/** Other records that point at a department/location (deleting would null them out or, for holidays, delete them). */
+async function linkedRecords(supabase: Awaited<ReturnType<typeof createClient>>, column: "department_id" | "location_id", id: string) {
+  const checks = [
+    { label: "job opening", query: supabase.from("job_openings").select("id", { count: "exact", head: true }).eq(column, id) },
+    ...(column === "location_id"
+      ? [{ label: "holiday", query: supabase.from("holidays").select("id", { count: "exact", head: true }).eq("location_id", id) }]
+      : []),
+  ];
+  const parts: string[] = [];
+  for (const { label, query } of checks) {
+    const { count, error } = await query;
+    if (error) throw new Error(dbError(error));
+    if (count) parts.push(`${count} ${label}${count === 1 ? "" : "s"}`);
+  }
+  return parts.length ? parts.join(" and ") : null;
+}
+
 function revalidateOrg() {
   revalidatePath("/admin/org");
   revalidatePath("/hris/employees");
@@ -67,6 +84,8 @@ export async function deleteDepartment(_prev: ActionState, fd: FormData): Promis
   try {
     const n = await usage(supabase, "department_id", id);
     if (n > 0) return fail(`This department has ${n} employee${n === 1 ? "" : "s"}. Move them to another department first.`);
+    const linked = await linkedRecords(supabase, "department_id", id);
+    if (linked) return fail(`This department is used by ${linked}. Reassign or close them first.`);
   } catch (e) {
     return fail((e as Error).message);
   }
@@ -145,6 +164,8 @@ export async function deleteLocation(_prev: ActionState, fd: FormData): Promise<
   try {
     const n = await usage(supabase, "location_id", id);
     if (n > 0) return fail(`${n} employee${n === 1 ? " is" : "s are"} based here. Move them to another location first.`);
+    const linked = await linkedRecords(supabase, "location_id", id);
+    if (linked) return fail(`This location is used by ${linked}. Reassign or remove them first.`);
   } catch (e) {
     return fail((e as Error).message);
   }

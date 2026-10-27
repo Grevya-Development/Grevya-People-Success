@@ -8,7 +8,7 @@ import { loadFormOptions, suggestEmployeeCode } from "../_data";
 export const metadata: Metadata = { title: "Add Employee" };
 
 export default async function NewEmployeePage() {
-  await requireHR();
+  const me = await requireHR();
   const [options, code] = await Promise.all([loadFormOptions(), suggestEmployeeCode()]);
 
   return (
@@ -20,6 +20,7 @@ export default async function NewEmployeePage() {
       />
       <EmployeeForm
         mode="create"
+        canGrantAdmin={me.isSuperAdmin}
         options={options}
         values={{
           first_name: "",

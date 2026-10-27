@@ -10,12 +10,12 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { EmployeeForm } from "../../_components/employee-form";
 import { LoginPanel } from "../../_components/login-panel";
 import { loadFormOptions } from "../../_data";
-import { ROLE_LABELS, UUID_RE } from "../../_lib";
+import { ROLE_LABELS, UUID_RE, isAdminRole, roleTone } from "../../_lib";
 
 export const metadata: Metadata = { title: "Edit Employee" };
 
 export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
-  await requireHR();
+  const me = await requireHR();
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
 
@@ -38,6 +38,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
     authInfo = { email: data.user?.email ?? null, lastSignIn: data.user?.last_sign_in_at ?? null };
   }
 
+  const adminLocked = isAdminRole(emp.role) && emp.id !== me.id && !me.isSuperAdmin;
   const designation = (emp.designation as { title: string } | null)?.title;
   const department = (emp.department as { name: string } | null)?.name;
 
@@ -52,6 +53,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
         <div className="order-2 lg:order-1">
           <EmployeeForm
             mode="edit"
+            canGrantAdmin={me.isSuperAdmin}
             options={options}
             values={{
               id: emp.id,
@@ -87,7 +89,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
               {department && <p className="text-xs text-slate-500">{department}</p>}
               <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                 <StatusBadge status={emp.status} />
-                <Badge tone={emp.role === "hr_admin" ? "purple" : emp.role === "manager" ? "blue" : "gray"}>{ROLE_LABELS[emp.role] ?? emp.role}</Badge>
+                <Badge tone={roleTone(emp.role)}>{ROLE_LABELS[emp.role] ?? emp.role}</Badge>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-2 text-left text-xs">
                 <div className="rounded-lg bg-slate-50 px-3 py-2">
@@ -125,8 +127,9 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
                   </div>
                 </div>
               )}
-              <LoginPanel employeeId={emp.id} hasLogin={!!emp.user_id} disabled={emp.status === "exited"} />
+              <LoginPanel employeeId={emp.id} hasLogin={!!emp.user_id} disabled={emp.status === "exited" || adminLocked} />
               {emp.status === "exited" && <p className="text-xs text-slate-500">Logins can&apos;t be issued to exited employees.</p>}
+              {adminLocked && emp.status !== "exited" && <p className="text-xs text-slate-500">Only a Super Admin can manage an admin&apos;s login.</p>}
             </CardBody>
           </Card>
 

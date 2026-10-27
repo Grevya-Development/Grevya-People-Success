@@ -48,7 +48,7 @@ export default async function SettingsPage() {
             <Row label="Sign-in email">{user?.email ?? me.email}</Row>
             <Row label="Employee code">{me.employee_code}</Row>
             <Row label="Role">
-              <Badge tone={me.role === "hr_admin" ? "purple" : me.role === "manager" ? "blue" : "gray"}>{ROLE_LABELS[me.role] ?? me.role}</Badge>
+              <Badge tone={me.role === "super_admin" ? "red" : me.role === "hr_admin" ? "purple" : me.role === "manager" ? "blue" : "gray"}>{ROLE_LABELS[me.role] ?? me.role}</Badge>
             </Row>
             <Row label="Last sign-in">{formatDateTime(user?.last_sign_in_at)}</Row>
             <Row label="Account created">{formatDateTime(user?.created_at)}</Row>

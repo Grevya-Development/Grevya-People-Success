@@ -21,6 +21,7 @@ export const ROLE_LABELS: Record<string, string> = {
   employee: "Employee",
   manager: "Manager",
   hr_admin: "HR Admin",
+  super_admin: "Super Admin",
 };
 
 export const EMPLOYMENT_LABELS: Record<string, string> = {

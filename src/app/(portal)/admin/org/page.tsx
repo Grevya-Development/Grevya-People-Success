@@ -308,7 +308,8 @@ function RowActions({
   inUse: number;
 }) {
   return (
-    <div className="flex justify-end gap-1.5">
+    // `relative` keeps the sr-only "Delete" label inside the table's scroll container (else it widens the page on mobile).
+    <div className="relative flex justify-end gap-1.5">
       <Dialog
         trigger={
           <Button variant="outline" size="sm" aria-label={`Edit ${name}`}>

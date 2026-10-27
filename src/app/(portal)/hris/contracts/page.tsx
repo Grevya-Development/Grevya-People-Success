@@ -330,9 +330,9 @@ async function HRContracts({ sp }: { sp: SP }) {
         ) : (
           <EmptyState
             icon={FileSignature}
-            title={total > 0 ? "No contracts on this page" : filtered ? "No contracts match these filters" : "No contracts yet"}
+            title={page > 1 ? "No contracts on this page" : filtered ? "No contracts match these filters" : "No contracts yet"}
             description={
-              total > 0 ? (
+              page > 1 ? (
                 <Link href={link({ page: "1" })} className="text-primary-600 hover:underline">
                   Go to the first page
                 </Link>

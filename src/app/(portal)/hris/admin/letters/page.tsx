@@ -418,9 +418,9 @@ async function IssuedTab({ sp }: { sp: SP }) {
       ) : (
         <EmptyState
           icon={FileText}
-          title={total > 0 ? "No letters on this page" : filtered ? "No letters match these filters" : "No letters issued yet"}
+          title={page > 1 ? "No letters on this page" : filtered ? "No letters match these filters" : "No letters issued yet"}
           description={
-            total > 0 ? (
+            page > 1 ? (
               <Link href={link(1)} className="text-primary-600 hover:underline">
                 Go to the first page
               </Link>
@@ -431,7 +431,7 @@ async function IssuedTab({ sp }: { sp: SP }) {
             )
           }
           action={
-            !filtered && total === 0 && (
+            !filtered && page === 1 && (
               <Link href="/hris/admin/letters?tab=issue" className={buttonClass("primary", "sm")}>
                 Issue a letter
               </Link>

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dbError } from "@/lib/actions";
 import { str, bool, orgToday } from "@/lib/utils";
-import { EMPLOYMENT_TYPES, GENDERS, ROLES, STATUSES, UUID_RE, type EmployeeResult } from "./_lib";
+import { EMPLOYMENT_TYPES, GENDERS, ROLES, STATUSES, UUID_RE, isAdminRole, type EmployeeResult } from "./_lib";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -216,6 +216,8 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
   const { data, error } = parseEmployee(fd);
   if (!data) return failure(error ?? "Invalid input");
 
+  if (isAdminRole(data.role) && !me.isSuperAdmin) return failure("Only a Super Admin can grant admin roles");
+
   const wantsLogin = bool(fd, "create_login");
   let password: string | undefined;
   if (wantsLogin) {
@@ -273,14 +275,19 @@ export async function updateEmployee(_prev: EmployeeResult, fd: FormData): Promi
   const { data, error } = parseEmployee(fd);
   if (!data) return failure(error ?? "Invalid input");
 
+  const supabase = await createClient();
+  const { data: current } = await supabase.from("employees").select("id, email, user_id, role").eq("id", id).maybeSingle();
+  if (!current) return failure("Employee not found");
+
   if (id === me.id) {
-    if (data.role !== "hr_admin") return failure("You can't remove your own HR Admin role");
+    if (data.role !== current.role) return failure("You can't change your own role");
     if (data.status === "exited") return failure("You can't mark yourself as exited");
   }
-
-  const supabase = await createClient();
-  const { data: current } = await supabase.from("employees").select("id, email, user_id").eq("id", id).maybeSingle();
-  if (!current) return failure("Employee not found");
+  if (data.role !== current.role && (isAdminRole(data.role) || isAdminRole(current.role)) && !me.isSuperAdmin)
+    return failure("Only a Super Admin can grant or remove admin roles");
+  // Changing an admin's sign-in email would let a non-super HR take over that account.
+  if (isAdminRole(current.role) && id !== me.id && !me.isSuperAdmin && current.user_id && current.email.toLowerCase() !== data.email)
+    return failure("Only a Super Admin can change an admin's sign-in email");
 
   const mgrErr = await checkManager(supabase, id, data.manager_id);
   if (mgrErr) return failure(mgrErr);
@@ -312,9 +319,10 @@ export async function setEmployeeLogin(_prev: EmployeeResult, fd: FormData): Pro
   if (!pw.password) return failure(pw.error ?? "Invalid password");
 
   const supabase = await createClient();
-  const { data: emp } = await supabase.from("employees").select("id, email, full_name, status").eq("id", id).maybeSingle();
+  const { data: emp } = await supabase.from("employees").select("id, email, full_name, status, role").eq("id", id).maybeSingle();
   if (!emp) return failure("Employee not found");
   if (emp.status === "exited") return failure("Exited employees can't be given a login");
+  if (isAdminRole(emp.role) && emp.id !== me.id && !me.isSuperAdmin) return failure("Only a Super Admin can reset an admin's login");
 
   const err = await provisionLogin(emp.id, emp.email.toLowerCase(), pw.password, emp.full_name ?? emp.email);
   if (err) return failure(err);

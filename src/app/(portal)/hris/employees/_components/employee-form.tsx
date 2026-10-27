@@ -8,7 +8,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button, buttonClass, Card, CardBody, CardHeader, Checkbox, Field, FormGrid, Input, Select } from "@/components/ui";
 import { humanize } from "@/lib/utils";
 import { createEmployee, updateEmployee } from "../actions";
-import { EMPLOYMENT_TYPES, GENDERS, ROLES, ROLE_LABELS, STATUSES, type EmployeeFormValues, type EmployeeResult, type Option } from "../_lib";
+import { EMPLOYMENT_TYPES, GENDERS, ROLES, ROLE_LABELS, STATUSES, isAdminRole, type EmployeeFormValues, type EmployeeResult, type Option } from "../_lib";
 import { PasswordReveal } from "./password-reveal";
 
 type Options = { departments: Option[]; designations: Option[]; locations: Option[]; managers: Option[] };
@@ -17,10 +17,13 @@ export function EmployeeForm({
   mode,
   values,
   options,
+  canGrantAdmin = false,
 }: {
   mode: "create" | "edit";
   values: EmployeeFormValues;
   options: Options;
+  /** Only Super Admins may grant or remove the HR Admin / Super Admin roles. */
+  canGrantAdmin?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -150,15 +153,29 @@ export function EmployeeForm({
             <OptionSelect id="designation_id" label="Designation" value={v.designation_id} options={options.designations} manageHint />
             <OptionSelect id="location_id" label="Location" value={v.location_id} options={options.locations} manageHint />
             <OptionSelect id="manager_id" label="Reporting manager" value={v.manager_id} options={options.managers} emptyLabel="No manager (top level)" />
-            <Field label="Portal role" htmlFor="role" required hint="HR Admins can manage every module.">
-              <Select id="role" name="role" defaultValue={v.role}>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            {!canGrantAdmin && isAdminRole(v.role) ? (
+              <Field label="Portal role" htmlFor="role" hint="Only a Super Admin can change admin roles.">
+                <input type="hidden" name="role" value={v.role} />
+                <Select id="role" value={v.role} disabled>
+                  <option value={v.role}>{ROLE_LABELS[v.role] ?? v.role}</option>
+                </Select>
+              </Field>
+            ) : (
+              <Field
+                label="Portal role"
+                htmlFor="role"
+                required
+                hint={canGrantAdmin ? "HR Admins can manage every module; Super Admins also manage admin rights." : "Admin roles are granted by a Super Admin."}
+              >
+                <Select id="role" name="role" defaultValue={v.role}>
+                  {ROLES.filter((r) => canGrantAdmin || !isAdminRole(r)).map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
           </FormGrid>
         </CardBody>
       </Card>

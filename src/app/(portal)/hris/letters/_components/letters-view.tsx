@@ -77,8 +77,8 @@ export async function LettersView({ category }: { category: LetterCategory }) {
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="min-w-0 lg:col-span-2">
           <CardHeader title="Issued letters" description={`${letters?.length ?? 0} letter${letters?.length === 1 ? "" : "s"}`} />
           {letters && letters.length > 0 ? (
             <ul className="divide-y divide-slate-100">

@@ -24,7 +24,7 @@ import {
   buttonClass,
 } from "@/components/ui";
 import { cn, formatDate, humanize } from "@/lib/utils";
-import { ROLES, ROLE_LABELS, STATUSES, UUID_RE } from "./_lib";
+import { ROLES, ROLE_LABELS, STATUSES, UUID_RE, roleTone } from "./_lib";
 
 export const metadata: Metadata = { title: "Employee List" };
 
@@ -88,8 +88,9 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
     return `/hris/employees${s ? `?${s}` : ""}`;
   };
 
-  // Out-of-range page (e.g. after filtering) → jump to the last page
-  if (rows.length === 0 && total > 0 && page > 1) redirect(hrefFor(pages));
+  // Out-of-range page (e.g. after filtering) → jump to the last page. PostgREST answers an
+  // out-of-range `range()` with an error and no count, so fall back to the first page then.
+  if (rows.length === 0 && page > 1) redirect(hrefFor(total > 0 ? pages : 1));
 
   return (
     <div>
@@ -231,7 +232,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                         )}
                       </TD>
                       <TD>
-                        <Badge tone={e.role === "hr_admin" ? "purple" : e.role === "manager" ? "blue" : "gray"}>{ROLE_LABELS[e.role] ?? humanize(e.role)}</Badge>
+                        <Badge tone={roleTone(e.role)}>{ROLE_LABELS[e.role] ?? humanize(e.role)}</Badge>
                       </TD>
                       <TD>
                         <StatusBadge status={e.status} />
