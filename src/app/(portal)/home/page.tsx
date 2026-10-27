@@ -12,7 +12,7 @@ import { AttendanceWidget, type DayRow } from "./_components/attendance-widget";
 
 export const metadata = { title: "Home" };
 
-const SUGGESTED = ["leave.apply", "attendance.my", "reimbursement.new", "performance.home", "payroll.slips", "apps.helpdesk"];
+const SUGGESTED = ["leave.apply", "attendance.my", "attendance.remote", "reimbursement.new", "performance.home", "payroll.slips", "apps.helpdesk"];
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const me = await requireEmployee();

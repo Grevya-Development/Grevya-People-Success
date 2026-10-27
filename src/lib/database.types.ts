@@ -975,6 +975,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"remote_work_sessions": {
+                  Row: {
+                    "check_in_accuracy": number | null,"check_in_at": string,"check_in_device": string | null,"check_in_ip": string | null,"check_in_lat": number | null,"check_in_lng": number | null,"check_in_photo": string,"check_out_accuracy": number | null,"check_out_at": string | null,"check_out_device": string | null,"check_out_ip": string | null,"check_out_lat": number | null,"check_out_lng": number | null,"check_out_photo": string | null,"created_at": string,"employee_id": string,"id": string,"notes": string | null,"work_date": string,"worked_minutes": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "check_in_accuracy"?: number | null,"check_in_at"?: string,"check_in_device"?: string | null,"check_in_ip"?: string | null,"check_in_lat"?: number | null,"check_in_lng"?: number | null,"check_in_photo": string,"check_out_accuracy"?: number | null,"check_out_at"?: string | null,"check_out_device"?: string | null,"check_out_ip"?: string | null,"check_out_lat"?: number | null,"check_out_lng"?: number | null,"check_out_photo"?: string | null,"created_at"?: string,"employee_id": string,"id"?: string,"notes"?: string | null,"work_date"?: string,"worked_minutes"?: never
+                  }
+                  Update: {
+                    "check_in_accuracy"?: number | null,"check_in_at"?: string,"check_in_device"?: string | null,"check_in_ip"?: string | null,"check_in_lat"?: number | null,"check_in_lng"?: number | null,"check_in_photo"?: string,"check_out_accuracy"?: number | null,"check_out_at"?: string | null,"check_out_device"?: string | null,"check_out_ip"?: string | null,"check_out_lat"?: number | null,"check_out_lng"?: number | null,"check_out_photo"?: string | null,"created_at"?: string,"employee_id"?: string,"id"?: string,"notes"?: string | null,"work_date"?: string,"worked_minutes"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "remote_work_sessions_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"resignations": {
                   Row: {
                     "approved_last_day": string | null,"created_at": string,"employee_id": string,"hr_action_at": string | null,"hr_remarks": string | null,"id": string,"manager_action_at": string | null,"manager_remarks": string | null,"notice_period_days": number,"reason": string,"reason_category": string,"requested_last_day": string,"resignation_date": string,"status": string
