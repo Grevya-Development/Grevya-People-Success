@@ -65,7 +65,7 @@ function ts(date: string, h: number, m: number) {
 
 // ---------- reset ----------
 const ALL_TABLES = [
-  "ticket_comments", "helpdesk_tickets", "declaration_responses", "declaration_forms", "addons",
+  "remote_work_sessions", "ticket_comments", "helpdesk_tickets", "declaration_responses", "declaration_forms", "addons",
   "interviews", "candidates", "job_openings", "course_enrollments", "courses",
   "exit_clearances", "resignations", "goal_updates", "reviews", "goals", "review_cycles",
   "claims", "claim_categories", "investment_declarations", "fbp_declarations", "vpf_declarations", "payslips", "salary_structures",
@@ -85,6 +85,7 @@ async function reset() {
     const { error } = await db.from(t).delete().not(key, "is", null);
     if (error) throw new Error(`reset ${t}: ${error.message}`);
   }
+  for (const bucket of ["documents", "attendance-photos", "avatars"]) await emptyBucket(bucket);
   let page = 1;
   for (;;) {
     const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
@@ -92,6 +93,19 @@ async function reset() {
     for (const u of data.users) if (u.email?.endsWith("@grevya.com")) await db.auth.admin.deleteUser(u.id);
     if (data.users.length < 200) break;
     page++;
+  }
+}
+
+/** Remove every object in a storage bucket (walks folders). */
+async function emptyBucket(bucket: string, prefix = "") {
+  for (;;) {
+    const { data, error } = await db.storage.from(bucket).list(prefix, { limit: 1000 });
+    if (error || !data || data.length === 0) return;
+    const files = data.filter((o) => o.id).map((o) => (prefix ? `${prefix}/${o.name}` : o.name));
+    const folders = data.filter((o) => !o.id).map((o) => (prefix ? `${prefix}/${o.name}` : o.name));
+    for (const f of folders) await emptyBucket(bucket, f);
+    if (files.length) await db.storage.from(bucket).remove(files);
+    if (files.length < 1000) return;
   }
 }
 
@@ -320,6 +334,13 @@ async function seedDemo() {
   await ins("leave_balances", balances);
 
   // Leaves: approved past + pending
+  const { data: hol } = await db.from("holidays").select("date").eq("type", "public");
+  const holidaySet = new Set((hol ?? []).map((h) => h.date));
+  const countWorking = (a: string, b: string) => {
+    let n = 0;
+    for (let d = a; d <= b; d = addDays(d, 1)) if (!isWeekend(d) && !holidaySet.has(d)) n++;
+    return n;
+  };
   const leaveRows: { emp: string; type: string; start: string; end: string; days: number; reason: string; status: "approved" | "pending" | "rejected" }[] = [
     { emp: "kavin", type: "CL", start: "2026-10-09", end: "2026-10-09", days: 1, reason: "Family function", status: "approved" },
     { emp: "priya", type: "SL", start: "2026-09-22", end: "2026-09-23", days: 2, reason: "Fever", status: "approved" },
@@ -332,7 +353,7 @@ async function seedDemo() {
   ];
   for (const l of leaveRows) {
     const [row] = await ins<{ id: string }>("leave_requests", {
-      employee_id: E[l.emp].id, leave_type_id: LT[l.type].id, start_date: l.start, end_date: l.end, days: l.days, reason: l.reason,
+      employee_id: E[l.emp].id, leave_type_id: LT[l.type].id, start_date: l.start, end_date: l.end, days: countWorking(l.start, l.end) || l.days, reason: l.reason,
     }, "id");
     if (l.status !== "pending") {
       await upd("leave_requests", { status: l.status, approver_id: E[l.emp].manager_id, actioned_at: new Date().toISOString(), approver_remarks: l.status === "rejected" ? "Quarter-end client visits" : "Approved" }, { id: row.id });
@@ -344,8 +365,6 @@ async function seedDemo() {
   }
 
   // Attendance since 1 Sep (not today)
-  const { data: hol } = await db.from("holidays").select("date").eq("type", "public");
-  const holidaySet = new Set((hol ?? []).map((h) => h.date));
   const att: Row[] = [];
   for (const s of specs) {
     const e = E[s.key];
@@ -362,6 +381,41 @@ async function seedDemo() {
   }
   for (let i = 0; i < att.length; i += 500) await ins("attendance_records", att.slice(i, i + 500), "id");
   console.log(`Attendance records: ${att.length}`);
+
+  // Remote check-ins (selfie + location) for a few people over the last working days
+  {
+    const { readFileSync } = await import("node:fs");
+    const photo = "seed/remote-sample.jpg";
+    await db.storage.from("attendance-photos").upload(photo, readFileSync("scripts/assets/remote-sample.jpg"), { contentType: "image/jpeg", upsert: true });
+    const people: [string, number, number][] = [["fatima", 18.5204, 73.8567], ["sneha", 13.0827, 80.2707], ["aisha", 13.0475, 80.2090]];
+    const remote: Row[] = [];
+    for (const [key, lat, lng] of people) {
+      let added = 0;
+      for (let d = addDays(today, -1); added < 6 && d > addDays(today, -20); d = addDays(d, -1)) {
+        if (isWeekend(d) || holidaySet.has(d) || d < E[key].date_of_joining || leaveDays.has(`${E[key].id}|${d}`)) continue;
+        const inM = between(0, 40), outH = between(17, 19), outM = between(0, 55);
+        remote.push({
+          employee_id: E[key].id, work_date: d,
+          check_in_at: ts(d, 9, inM), check_out_at: ts(d, outH, outM),
+          check_in_photo: photo, check_out_photo: photo,
+          check_in_lat: lat + rand() * 0.002, check_in_lng: lng + rand() * 0.002, check_in_accuracy: between(8, 40),
+          check_out_lat: lat + rand() * 0.002, check_out_lng: lng + rand() * 0.002, check_out_accuracy: between(8, 40),
+          check_in_device: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36",
+          check_out_device: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36",
+          check_in_ip: `49.37.${between(1, 254)}.${between(1, 254)}`, notes: pick(["Sprint tasks", "Client calls and documentation", "Code reviews", "Lead follow-ups"]),
+        });
+        added++;
+      }
+    }
+    await ins("remote_work_sessions", remote, "id");
+    for (const r of remote) {
+      await db.from("attendance_records").upsert(
+        { employee_id: r.employee_id, date: r.work_date, check_in: r.check_in_at, check_out: r.check_out_at, status: "wfh", work_mode: "remote", source: "web", notes: "Remote check-in with photo" },
+        { onConflict: "employee_id,date" },
+      );
+    }
+    console.log(`Remote sessions: ${remote.length}`);
+  }
 
   // Regularization + comp-off
   const missed = (() => {

@@ -13,7 +13,8 @@ const ROUTES = `/home /notifications /profile /profile/personal /profile/educati
 /reimbursement/new /reimbursement/claims /reimbursement/approvals
 /learning /learning/catalog /learning/my-courses /learning/plan /learning/certificates /learning/team /learning/admin
 /recruit /recruit/jobs /recruit/referrals /recruit/admin
-/apps /apps/helpdesk /apps/helpdesk/queue /apps/declarations /apps/declarations/admin /admin/announcements /admin/addons`.split(/\s+/).filter(Boolean);
+/apps /apps/helpdesk /apps/helpdesk/queue /apps/declarations /apps/declarations/admin /admin/announcements /admin/addons
+/attendance/remote /attendance/remote/history /attendance/remote/team /admin/accounts`.split(/\s+/).filter(Boolean);
 
 async function cookieFor(email) {
   const jar = new Map();
