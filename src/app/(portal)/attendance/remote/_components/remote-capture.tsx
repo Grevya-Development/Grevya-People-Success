@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Camera, CameraOff, Loader2, LogIn, LogOut, MapPin, RefreshCw, RotateCcw, Upload } from "lucide-react";
@@ -15,6 +15,12 @@ const istTime = (d: Date) =>
   new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).format(d);
 const istDate = (d: Date) =>
   new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "2-digit", month: "short", year: "numeric" }).format(d);
+
+function subscribeClock(cb: () => void) {
+  const id = window.setInterval(cb, 1000);
+  return () => window.clearInterval(id);
+}
+const clockSnapshot = () => Math.floor(Date.now() / 1000) * 1000;
 
 function elapsed(fromIso: string, now: number) {
   const m = Math.max(0, Math.floor((now - new Date(fromIso).getTime()) / 60000));
@@ -36,7 +42,9 @@ export function RemoteCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // Live clock: null during server render so the HTML matches on hydration.
+  const nowTick = useSyncExternalStore(subscribeClock, clockSnapshot, () => null);
+  const now = nowTick ?? 0;
   const [camera, setCamera] = useState<"starting" | "live" | "error">("starting");
   const [cameraError, setCameraError] = useState("");
   const [geo, setGeo] = useState<Geo>({ status: "idle" });
@@ -44,10 +52,6 @@ export function RemoteCapture({
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -202,11 +206,11 @@ export function RemoteCapture({
       <div className={cn("flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-white", isIn ? "bg-[#e3a91a]" : "bg-emerald-600")}>
         <div>
           <p className="text-sm font-semibold">{isIn ? "Remote Check-In" : "You're working remotely"}</p>
-          <p className="text-xs text-white/85">{istDate(nowDate)}</p>
+          <p className="text-xs text-white/85">{nowTick ? istDate(nowDate) : "\u00a0"}</p>
         </div>
         <div className="text-right">
-          <p className="font-mono text-2xl font-semibold tabular-nums">{istTime(nowDate)}</p>
-          {!isIn && openSince && <p className="text-xs text-white/90">On the clock for {elapsed(openSince, now)}</p>}
+          <p className="font-mono text-2xl font-semibold tabular-nums">{nowTick ? istTime(nowDate) : "--:--:--"}</p>
+          {!isIn && openSince && nowTick ? <p className="text-xs text-white/90">On the clock for {elapsed(openSince, now)}</p> : null}
         </div>
       </div>
 

@@ -9,10 +9,27 @@ export function cn(...inputs: ClassValue[]) {
 
 type DateInput = string | Date | null | undefined;
 
+const IST_OFFSET_MIN = 330;
+
+/**
+ * Shift an instant so its *local* fields read as India time. date-fns formats
+ * with the runtime's time zone, which differs between servers (often UTC) and
+ * browsers; anchoring to IST keeps server and client output identical and
+ * shows the correct time for Grevya everywhere.
+ */
+function asIndiaWallClock(date: Date): Date {
+  return new Date(date.getTime() + (IST_OFFSET_MIN + date.getTimezoneOffset()) * 60000);
+}
+
 function toDate(d: DateInput): Date | null {
   if (!d) return null;
+  // Plain dates ("2026-10-27") are calendar days, not instants: keep them as-is.
+  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const day = parseISO(d);
+    return isValid(day) ? day : null;
+  }
   const date = typeof d === "string" ? parseISO(d) : d;
-  return isValid(date) ? date : null;
+  return isValid(date) ? asIndiaWallClock(date) : null;
 }
 
 /** 27 Oct 2026 */
