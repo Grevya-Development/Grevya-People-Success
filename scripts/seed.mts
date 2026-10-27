@@ -574,6 +574,66 @@ async function seedDemo() {
   );
   await ins("course_enrollments", enroll);
 
+  // Learning: paths, knowledge wiki, training calendar, external training
+  // (--reset doesn't list these tables; clear rows that outlive their employees)
+  for (const t of ["learning_paths", "training_sessions"]) {
+    const { error } = await db.from(t).delete().not("id", "is", null);
+    if (error) throw new Error(`reset ${t}: ${error.message}`);
+  }
+  const [lp1, lp2] = await ins<{ id: string }>("learning_paths", [
+    { title: "GenAI Engineer Foundations", description: "From your first prompt to production retrieval systems — the core path for everyone building with LLMs at Grevya.", category: "Technical", published: true, created_by: E.ananya.id },
+    { title: "New Manager Essentials", description: "Communication, feedback and compliance basics for people stepping into their first lead role.", category: "Leadership", published: true, created_by: E.ananya.id },
+  ]);
+  await ins("learning_path_courses", [
+    { path_id: lp1.id, course_id: CO["Prompt Engineering Fundamentals"], position: 0 },
+    { path_id: lp1.id, course_id: CO["Retrieval-Augmented Generation in Production"], position: 1 },
+    { path_id: lp1.id, course_id: CO["Information Security Awareness 2026"], position: 2 },
+    { path_id: lp2.id, course_id: CO["Effective Business Communication"], position: 0 },
+    { path_id: lp2.id, course_id: CO["Leading High-Performing Teams"], position: 1 },
+    { path_id: lp2.id, course_id: CO["Prevention of Sexual Harassment (POSH)"], position: 2 },
+  ]);
+  await ins("learning_path_enrollments", { path_id: lp1.id, employee_id: E.kavin.id, started_at: ts(addDays(today, -20), 10, 0) });
+
+  const daysAgo = (n: number) => ts(addDays(today, -n), 11, 0);
+  const wiki = [
+    { author_id: E.kavin.id, title: "How we evaluate RAG pipelines", category: "Gen AI", tags: ["rag", "evals", "llm"], status: "published", view_count: 42, published: 9,
+      content: "# Why evals come first\nEvery retrieval change we ship is measured against a fixed golden set before it reaches a customer. Without evals, \"it looks better\" is just a feeling.\n\n## The golden set\n- 150 real customer questions, anonymised\n- An expected answer and the source passages for each\n- Refreshed every quarter with new failure cases\n\n## What we measure\n1. **Retrieval recall@5** — did the right passage show up?\n2. **Answer faithfulness** — is every claim backed by a retrieved passage?\n3. **Latency p95** — must stay under 2.5 seconds\n\n> Tip: run `make eval` locally before opening a PR. CI runs the same suite and posts the diff.\n\n## When a metric drops\nRoll back first, investigate second. Post the eval diff in #genai-quality so others learn from it." },
+    { author_id: E.ananya.id, title: "Your first week at Grevya: a checklist", category: "Onboarding", tags: ["onboarding", "checklist"], status: "published", view_count: 118, published: 20,
+      content: "# Welcome aboard!\nThis checklist helps you settle in during your first five days.\n\n## Day 1\n- Collect your laptop and ID card from the IT desk\n- Sign in to People Success and complete your profile\n- Acknowledge the Code of Conduct and Information Security policies\n\n## Days 2–3\n- Meet your manager for a 30-minute onboarding 1:1\n- Start the mandatory **Information Security Awareness** course\n- Join the #general and #ask-hr Slack channels\n\n## Days 4–5\n- Set your first goals with your manager\n- Book a coffee with your buddy\n\n> Questions? Raise a ticket under More Apps → HR Helpdesk and we will get back within a working day." },
+    { author_id: E.arvind.id, title: "Code review guidelines for the platform team", category: "Engineering", tags: ["code-review", "engineering"], status: "published", view_count: 67, published: 14,
+      content: "# Reviews are for learning\nA good review makes the code better **and** makes the author better. Be kind, be specific, be quick.\n\n## For authors\n- Keep PRs under 400 lines where possible\n- Explain the *why* in the description, not just the what\n- Self-review before requesting reviewers\n\n## For reviewers\n1. Respond within one working day\n2. Prefix nits with `nit:` so authors can skip them\n3. Approve when it is better than before — not when it is perfect\n\n## Blocking issues\nSecurity, data loss, missing tests for business logic, and breaking API changes always block a merge." },
+    { author_id: E.neha.id, title: "Writing accessible UI copy", category: "Design", tags: ["design", "accessibility", "ux-writing"], status: "published", view_count: 23, published: 4,
+      content: "# Words are interface\nMost accessibility issues we find in audits are copy problems, not colour problems.\n\n## Buttons and links\n- Start with a verb: \"Download payslip\", not \"Payslip\"\n- Never use \"Click here\" — screen readers list links out of context\n\n## Errors\n- Say what happened and how to fix it\n- Do not blame the user: \"We could not find that date\" beats \"Invalid input\"\n\n## Quick checks\n1. Read the screen out loud — does it still make sense?\n2. Is every icon button labelled?\n3. Would this make sense to someone new to the product?" },
+    { author_id: E.rahul.id, title: "Getting access to the shared GPU cluster", category: "Tools", tags: ["gpu", "infra"], status: "submitted", view_count: 0, published: 0,
+      content: "# Requesting access\nRaise an IT & Access ticket with your team name and expected monthly GPU hours.\n\n## Etiquette\n- Release idle notebooks after 2 hours\n- Use the `preemptible` queue for experiments\n- Tag jobs with your project code for cost tracking" },
+    { author_id: E.sneha.id, title: "Notes on fine-tuning small models", category: "Gen AI", tags: ["fine-tuning"], status: "draft", view_count: 0, published: 0,
+      content: "# Draft\nCollecting my notes from the LoRA experiments — not ready yet." },
+  ];
+  const wikiRows = await ins<{ id: string }>("wiki_articles", wiki.map((w) => ({ author_id: w.author_id, title: w.title, category: w.category, tags: w.tags, status: w.status, view_count: w.view_count, content: w.content })));
+  // The workflow trigger stamps review dates with now(); backdate the demo ones.
+  for (const [i, w] of wiki.entries()) {
+    if (w.status === "published") await upd("wiki_articles", { published_at: daysAgo(w.published), reviewed_at: daysAgo(w.published), reviewed_by: E.ananya.id, submitted_at: w.author_id === E.ananya.id ? null : daysAgo(w.published + 1) }, { id: wikiRows[i].id });
+    if (w.status === "submitted") await upd("wiki_articles", { submitted_at: daysAgo(1) }, { id: wikiRows[i].id });
+  }
+
+  const [ts1, ts2, ts3] = await ins<{ id: string }>("training_sessions", [
+    { title: "Hands-on: Building RAG pipelines", description: "A live coding session walking through chunking, hybrid retrieval and evals on a real support dataset. Bring a laptop with Python 3.11.", trainer: "Kavin N R", starts_at: ts(addDays(today, 7), 15, 0), ends_at: ts(addDays(today, 7), 17, 0), mode: "virtual", meeting_link: "https://meet.google.com/grv-rag-live", capacity: 20, course_id: CO["Retrieval-Augmented Generation in Production"], created_by: E.ananya.id },
+    { title: "POSH awareness session", description: "Annual in-person session with the Internal Committee. Attendance counts towards your POSH compliance.", trainer: "Ananya Iyer", starts_at: ts(addDays(today, 15), 11, 0), ends_at: ts(addDays(today, 15), 12, 0), mode: "in_person", location: "Bangalore office · Board room", capacity: 40, course_id: CO["Prevention of Sexual Harassment (POSH)"], created_by: E.ananya.id },
+    { title: "Feedback that lands — workshop for leads", description: "Role-play the SBI feedback model and practise difficult conversations in small groups.", trainer: "Vikram Rao", starts_at: ts(addDays(today, 21), 16, 0), ends_at: ts(addDays(today, 21), 17, 30), mode: "virtual", meeting_link: "https://meet.google.com/grv-feedback", capacity: 12, course_id: CO["Leading High-Performing Teams"], created_by: E.ananya.id },
+  ]);
+  await ins("training_registrations", [
+    { session_id: ts1.id, employee_id: E.kavin.id },
+    { session_id: ts1.id, employee_id: E.rahul.id },
+    { session_id: ts1.id, employee_id: E.sneha.id },
+    { session_id: ts3.id, employee_id: E.kavin.id },
+    { session_id: ts2.id, employee_id: E.neha.id },
+  ]);
+
+  await ins("external_trainings", [
+    { employee_id: E.priya.id, title: "AWS Certified Machine Learning – Specialty", provider: "Amazon Web Services", training_type: "certification", mode: "online", start_date: addDays(today, 30), end_date: addDays(today, 30), cost: 24500, justification: "Our customer deployments are moving to SageMaker. The certification covers the MLOps patterns we need for the Q1 migration.", link: "https://aws.amazon.com/certification/certified-machine-learning-specialty/", status: "pending", created_at: daysAgo(2) },
+    { employee_id: E.sneha.id, title: "PyData Global 2026", provider: "NumFOCUS", training_type: "conference", mode: "online", start_date: addDays(today, 36), end_date: addDays(today, 38), cost: 8000, justification: "Talks on evaluation tooling and LLM observability are directly relevant to our evals roadmap. I will share notes in the wiki.", link: "https://pydata.org/global2026", status: "approved", approver_id: E.kavin.id, approver_remarks: "Great pick — please do share your notes.", decided_at: daysAgo(5), created_at: daysAgo(8) },
+  ]);
+
   // Recruit
   const jobs = await ins<{ id: string; title: string }>("job_openings", [
     { title: "Senior GenAI Engineer", department_id: D.GAI, location_id: L.Bangalore, experience_min: 4, experience_max: 8, openings: 2, referral_bonus: 75000, hiring_manager_id: E.kavin.id, created_by: E.ananya.id, description: "Design and ship LLM-powered products end to end.", requirements: "Python, LLM APIs, RAG, evals, cloud deployment." },
@@ -602,7 +662,37 @@ async function seedDemo() {
     { title: "Travel & Expense Policy", category: "Finance", version: "1.4", effective_date: "2026-04-01", summary: "Eligible expenses, limits and how to claim.", content: "<table><tr><th>Category</th><th>Limit</th></tr><tr><td>Local travel</td><td>Actuals</td></tr><tr><td>Meals</td><td>₹1,500/day</td></tr><tr><td>Hotel (metro)</td><td>₹6,000/night</td></tr></table><p>Submit claims within 30 days with receipts.</p>" },
     { title: "Information Security Policy", category: "IT", version: "2.2", effective_date: "2026-02-01", summary: "Acceptable use, passwords, devices and data classification.", content: "<ul><li>Use SSO and MFA everywhere.</li><li>Never share customer data outside approved tools.</li><li>Report incidents to security@grevya.com within 1 hour.</li></ul>" },
     { title: "POSH Policy", category: "Conduct", version: "1.2", effective_date: "2025-12-01", summary: "Prevention of sexual harassment at the workplace.", content: "<p>Grevya has zero tolerance for sexual harassment. Complaints can be raised with the Internal Committee at ic@grevya.com.</p>", requires_acknowledgement: true },
+    { title: "Remote Work Policy", category: "Workplace", version: "1.0", effective_date: "2026-07-01", summary: "Eligibility, expectations and equipment for working from home.", content: "<p>Confirmed employees may work remotely up to 2 days a week in agreement with their manager. Core collaboration hours are 11:00–17:00 IST.</p><p>Use Remote Check-in to punch in, work only on company devices and always connect through the VPN.</p>" },
   ]);
+  // Policy documents (generated PDFs in scripts/assets/policies), stored in the HR admin's private folder.
+  {
+    const { readFileSync, statSync } = await import("node:fs");
+    const { data: hr } = await db.from("employees").select("user_id").eq("email", "hr@grevya.com").single();
+    const docs: [string, string][] = [
+      ["Leave Policy", "leave-policy.pdf"],
+      ["Attendance & Hybrid Work Policy", "attendance-hybrid-work-policy.pdf"],
+      ["Code of Conduct", "code-of-conduct.pdf"],
+      ["Travel & Expense Policy", "travel-expense-policy.pdf"],
+      ["Information Security Policy", "information-security-policy.pdf"],
+      ["POSH Policy", "posh-policy.pdf"],
+      ["Remote Work Policy", "remote-work-policy.pdf"],
+      ["Employee Handbook", "employee-handbook.pdf"],
+    ];
+    for (const [title, file] of hr?.user_id ? docs : []) {
+      const local = `scripts/assets/policies/${file}`;
+      if (!existsSync(local)) continue;
+      const path = `${hr!.user_id}/policies/${file}`;
+      const { error } = await db.storage.from("documents").upload(path, readFileSync(local), { contentType: "application/pdf", upsert: true });
+      if (error) throw new Error(`policy document ${file}: ${error.message}`);
+      const doc = { document_path: path, document_name: file, document_size: statSync(local).size, document_type: "application/pdf" };
+      if (title === "Employee Handbook") {
+        // Document-only policy (no text content), so it is created together with its file.
+        await ins("policies", { title, category: "General", version: "2026.1", effective_date: "2026-01-01", summary: "Culture, benefits, timings, tools and who to ask for help — everything about working at Grevya.", content: null, requires_acknowledgement: true, ...doc });
+      } else {
+        await upd("policies", doc, { title });
+      }
+    }
+  }
   await ins("faqs", [
     { category: "Leave", question: "How do I apply for leave?", answer: "Go to Leave → Apply Leave, choose the type and dates, add a reason and submit. Your manager is notified instantly.", sort_order: 1 },
     { category: "Leave", question: "Can I cancel an approved leave?", answer: "Yes — from Employee Leave Details you can cancel any approved leave that hasn't started. The balance is restored automatically.", sort_order: 2 },

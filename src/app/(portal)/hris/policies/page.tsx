@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { BookOpenCheck, CalendarDays, ChevronRight, FileText, HelpCircle, Settings2 } from "lucide-react";
+import { BookOpenCheck, FileText, HelpCircle, Settings2 } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatDateTime } from "@/lib/utils";
-import { Badge, Card, EmptyState, PageHeader, buttonClass } from "@/components/ui";
+import { Card, EmptyState, PageHeader, buttonClass } from "@/components/ui";
 import { LinkTabs } from "@/components/ui/link-tabs";
 import { FaqList } from "./_components/faq-list";
+import { DocumentLibrary, type LibraryItem } from "./_components/document-library";
 
 export const metadata = { title: "Policies & FAQs" };
 
@@ -17,7 +17,7 @@ export default async function PoliciesPage({ searchParams }: { searchParams: Pro
 
   let policyQuery = supabase
     .from("policies")
-    .select("id, title, category, summary, version, effective_date, requires_acknowledgement, published, updated_at")
+    .select("id, title, category, summary, content, version, effective_date, requires_acknowledgement, published, document_name, document_size, document_type")
     .order("category")
     .order("title");
   if (!me.isHR) policyQuery = policyQuery.eq("published", true);
@@ -32,12 +32,21 @@ export default async function PoliciesPage({ searchParams }: { searchParams: Pro
   const list = policies ?? [];
   const pendingAcks = list.filter((p) => p.published && p.requires_acknowledgement && !ackMap.has(p.id)).length;
 
-  const byCategory = new Map<string, typeof list>();
-  for (const p of list) {
-    const arr = byCategory.get(p.category) ?? [];
-    arr.push(p);
-    byCategory.set(p.category, arr);
-  }
+  const items: LibraryItem[] = list.map((p) => ({
+    id: p.id,
+    title: p.title,
+    category: p.category,
+    summary: p.summary,
+    version: p.version,
+    effectiveDate: p.effective_date,
+    published: p.published,
+    hasContent: Boolean(p.content?.trim()),
+    requiresAck: p.requires_acknowledgement,
+    ackedAt: ackMap.get(p.id) ?? null,
+    docName: p.document_name,
+    docSize: p.document_size,
+    docType: p.document_type,
+  }));
 
   return (
     <div>
@@ -77,55 +86,7 @@ export default async function PoliciesPage({ searchParams }: { searchParams: Pro
               </span>
             </div>
           )}
-          {[...byCategory.entries()].map(([category, items]) => (
-            <section key={category}>
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[#3753b8]">
-                <span className="h-4 w-1 rounded-full bg-[#5b74d6]" />
-                {category}
-                <span className="text-xs font-normal normal-case text-slate-400">({items.length})</span>
-              </h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {items.map((p) => {
-                  const ackedAt = ackMap.get(p.id);
-                  return (
-                    <Link
-                      key={p.id}
-                      href={`/hris/policies/${p.id}`}
-                      className="group flex flex-col rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition hover:border-[#5b74d6]/50 hover:shadow-md"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#dce5fa] text-[#3753b8]">
-                          <FileText className="h-5 w-5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#3753b8]">{p.title}</h3>
-                          <p className="mt-0.5 text-xs text-slate-500">Version {p.version}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-[#3753b8]" />
-                      </div>
-                      {p.summary && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-slate-600">{p.summary}</p>}
-                      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                          <CalendarDays className="h-3.5 w-3.5" /> Effective {formatDate(p.effective_date)}
-                        </span>
-                        <span className="ml-auto flex flex-wrap gap-1.5">
-                          {!p.published && <Badge tone="gray">Draft</Badge>}
-                          {p.requires_acknowledgement &&
-                            (ackedAt ? (
-                              <span title={`Acknowledged ${formatDateTime(ackedAt)}`}>
-                                <Badge tone="green">Acknowledged</Badge>
-                              </span>
-                            ) : (
-                              <Badge tone="yellow">Acknowledgement pending</Badge>
-                            ))}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+          <DocumentLibrary items={items} />
         </div>
       )}
 

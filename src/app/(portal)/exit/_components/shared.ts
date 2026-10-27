@@ -6,13 +6,28 @@ export const REASON_CATEGORIES = [
   "Better opportunity",
   "Higher studies",
   "Relocation",
-  "Personal / Family",
+  "Personal / family reasons",
   "Health",
   "Compensation",
   "Career change",
-  "Work environment",
   "Other",
 ] as const;
+
+/** Resignee comment limit (characters). */
+export const COMMENT_MAX = 3000;
+
+/** Resignation attachment: PDF, image or Word document up to 10 MB. */
+export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const ATTACHMENT_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx";
+export const ATTACHMENT_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+export const ATTACHMENT_EXT = /\.(pdf|png|jpe?g|webp|docx?)$/i;
 
 /** Statuses that count as an "open" resignation (one per employee). */
 export const OPEN_STATUSES = ["pending_manager", "pending_hr", "approved"] as const;

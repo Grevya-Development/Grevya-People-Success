@@ -6,20 +6,47 @@ import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Field, Input, Pa
 import { ActionButton } from "@/components/ui/action-button";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { Dialog } from "@/components/ui/dialog";
+import { LinkTabs } from "@/components/ui/link-tabs";
 import { cn, humanize, orgToday } from "@/lib/utils";
 import { bulkAssign, deleteCourse, setCoursePublished } from "../actions";
 import { CompletionChart } from "../_components/completion-chart";
 import { CourseForm } from "../_components/course-form";
 import { CourseProgress } from "../_components/progress";
+import { AdminPaths } from "../_components/admin-paths";
+import { AdminWiki } from "../_components/admin-wiki";
 import { categoryStyle, formatHours, parseModules } from "../_lib/course";
 
 export const metadata = { title: "Learning Admin" };
 
-export default async function LearningAdminPage({ searchParams }: { searchParams: Promise<{ edit?: string; q?: string }> }) {
+export default async function LearningAdminPage({ searchParams }: { searchParams: Promise<{ edit?: string; q?: string; tab?: string }> }) {
   await requireHR();
-  const { edit, q: rawQ } = await searchParams;
+  const { edit, q: rawQ, tab } = await searchParams;
   const q = (rawQ ?? "").trim().toLowerCase();
   const supabase = await createClient();
+
+  const { count: pendingWiki } = await supabase.from("wiki_articles").select("id", { count: "exact", head: true }).eq("status", "submitted");
+  const tabs = (
+    <LinkTabs
+      tabs={[
+        { label: "Courses", href: "/learning/admin" },
+        { label: "Learning Paths", href: "/learning/admin?tab=paths" },
+        { label: "Wiki moderation", href: "/learning/admin?tab=wiki", count: pendingWiki ?? 0 },
+      ]}
+    />
+  );
+  if (tab === "paths" || tab === "wiki") {
+    return (
+      <div>
+        <PageHeader
+          title="Learning Admin"
+          description={tab === "paths" ? "Curate ordered learning paths and assign them across the organisation." : "Review articles submitted to the Knowledge Wiki."}
+          breadcrumbs={[{ label: "HR Admin" }, { label: "Learning Admin" }]}
+        />
+        {tabs}
+        {tab === "paths" ? <AdminPaths edit={edit} /> : <AdminWiki />}
+      </div>
+    );
+  }
   const today = orgToday();
 
   const [{ data: courseData }, { data: enrData }, { data: deptData }, { data: empData }] = await Promise.all([
@@ -81,6 +108,8 @@ export default async function LearningAdminPage({ searchParams }: { searchParams
           </Dialog>
         }
       />
+
+      {tabs}
 
       {editing && (
         <Card className="mb-5 ring-2 ring-[#3a95b3]/30">

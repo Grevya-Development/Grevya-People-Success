@@ -5,9 +5,19 @@ import { getCurrentEmployee, type CurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { str, bool, orgToday } from "@/lib/utils";
-import { NOTICE_PERIOD_DAYS, REASON_CATEGORIES, MANAGER_CLEARANCE } from "./_components/shared";
+import { uploadDocument } from "@/lib/storage";
+import {
+  ATTACHMENT_EXT,
+  ATTACHMENT_MAX_BYTES,
+  ATTACHMENT_TYPES,
+  COMMENT_MAX,
+  REASON_CATEGORIES,
+  MANAGER_CLEARANCE,
+} from "./_components/shared";
+import { getNoticePeriodDays } from "./_lib/resign-info";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function revalidateExit() {
   revalidatePath("/exit/resign");
@@ -53,13 +63,26 @@ export async function submitResignation(_prev: ActionState, fd: FormData): Promi
   const category = str(fd, "reason_category");
   const reason = str(fd, "reason");
   const lastDay = str(fd, "requested_last_day");
-  if (!category || !(REASON_CATEGORIES as readonly string[]).includes(category)) return fail("Choose a reason category");
-  if (!reason || reason.length < 20) return fail("Please describe your reason in at least 20 characters");
-  if (reason.length > 4000) return fail("Reason is too long (max 4000 characters)");
-  if (!lastDay || !DATE_RE.test(lastDay)) return fail("Choose your requested last working day");
+  const email = str(fd, "correspondence_email");
+  const phoneDigits = (str(fd, "correspondence_phone") ?? "").replace(/[\s-]/g, "");
+  if (!category || !(REASON_CATEGORIES as readonly string[]).includes(category)) return fail("Select a reason for leaving");
+  if (!reason) return fail("Resignee comment is required");
+  if (reason.length > COMMENT_MAX) return fail(`Resignee comment is too long (max ${COMMENT_MAX} characters)`);
+  if (!lastDay || !DATE_RE.test(lastDay) || Number.isNaN(Date.parse(lastDay))) return fail("Choose your requested last working day");
   const today = orgToday();
   if (lastDay <= today) return fail("Last working day must be after today");
-  if (!bool(fd, "acknowledge")) return fail("Please confirm the acknowledgement");
+  if (!email || email.length > 254 || !EMAIL_RE.test(email)) return fail("Enter a valid correspondence email");
+  if (phoneDigits && !/^[0-9]{10}$/.test(phoneDigits)) return fail("Correspondence number must be 10 digits");
+  if (!bool(fd, "declaration")) return fail("Please confirm the declaration");
+
+  const file = fd.get("attachment");
+  const hasFile = file instanceof File && file.size > 0;
+  if (hasFile) {
+    if (file.size > ATTACHMENT_MAX_BYTES) return fail("Attachment must be 10 MB or smaller");
+    if (!ATTACHMENT_EXT.test(file.name) || (file.type && !ATTACHMENT_TYPES.includes(file.type))) {
+      return fail("Attachment must be a PDF, image or Word document");
+    }
+  }
 
   const supabase = await createClient();
   const { count } = await supabase
@@ -69,16 +92,32 @@ export async function submitResignation(_prev: ActionState, fd: FormData): Promi
     .in("status", ["pending_manager", "pending_hr", "approved"]);
   if ((count ?? 0) > 0) return fail("You already have an open resignation.");
 
+  let attachmentPath: string | null = null;
+  if (hasFile) {
+    try {
+      attachmentPath = await uploadDocument(file, "resignations");
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : "Could not upload the attachment");
+    }
+  }
+
   const { error } = await supabase.from("resignations").insert({
     employee_id: me.id,
     reason_category: category,
     reason,
     resignation_date: today,
     requested_last_day: lastDay,
-    notice_period_days: NOTICE_PERIOD_DAYS,
+    notice_period_days: await getNoticePeriodDays(supabase),
+    correspondence_email: email,
+    correspondence_phone: phoneDigits ? `+91 ${phoneDigits}` : null,
+    attachment_path: attachmentPath,
+    attachment_name: hasFile ? file.name.slice(0, 255) : null,
     status: "pending_manager",
   });
-  if (error) return fail(error.code === "23505" ? "You already have an open resignation." : dbError(error));
+  if (error) {
+    if (attachmentPath) await supabase.storage.from("documents").remove([attachmentPath]);
+    return fail(error.code === "23505" ? "You already have an open resignation." : dbError(error));
+  }
   revalidateExit();
   return ok("Resignation submitted to your manager", "/exit/status");
 }

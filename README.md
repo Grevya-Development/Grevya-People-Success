@@ -48,6 +48,13 @@ npm run db:push                    # apply any new migrations to the hosted DB
 npm run smoke -- hr@grevya.com     # request every page as a role (dev server must be running)
 ```
 
+## Gia — the in-portal assistant
+
+The purple **Gia** button (bottom-right) answers HR questions: leave balance, holidays, payslips, attendance, pending requests, policies and FAQs, and where to find any page. It only reads data the signed-in person is already allowed to see.
+
+- Without configuration it uses built-in quick answers.
+- Add `ANTHROPIC_API_KEY` to `.env.local` (and your host's environment) to switch on AI answers powered by Claude (`claude-opus-5-5` by default; override with `ASSISTANT_MODEL`). Each question costs a small amount of API usage.
+
 ## How access works
 
 Security is enforced in the database (Row Level Security + triggers), not just the UI:

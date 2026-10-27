@@ -182,12 +182,25 @@ export const MODULES: NavModule[] = [
     href: "/learning",
     theme: t("bg-[#d5e9f0]", "hover:bg-[#c0dde8]", "text-[#25708a]", "bg-[#3a95b3]"),
     items: [
-      { key: "learning.home", label: "Learning Home", href: "/learning" },
+      { key: "learning.home", label: "Learner Home", href: "/learning" },
       { key: "learning.my-courses", label: "My Courses", href: "/learning/my-courses" },
-      { key: "learning.catalog", label: "Course Catalog", href: "/learning/catalog" },
+      { key: "learning.paths", label: "My Learning Paths", href: "/learning/paths" },
       { key: "learning.plan", label: "My Learning Plan", href: "/learning/plan" },
       { key: "learning.certificates", label: "My Certificates", href: "/learning/certificates" },
-      { key: "learning.team", label: "My Team Learning", href: "/learning/team", audience: "manager" },
+      { key: "learning.team", label: "My Team Courses", href: "/learning/team", audience: "manager" },
+      {
+        key: "learning.wiki",
+        label: "Knowledge Wiki",
+        children: [
+          { key: "learning.wiki-read", label: "Read Articles", href: "/learning/wiki" },
+          { key: "learning.wiki-mine", label: "My Articles", href: "/learning/wiki/mine" },
+          { key: "learning.wiki-new", label: "Add New Article", href: "/learning/wiki/new" },
+        ],
+      },
+      { key: "learning.catalog", label: "Catalog", href: "/learning/catalog" },
+      { key: "learning.external", label: "External Training", href: "/learning/external" },
+      { key: "learning.external-approvals", label: "Training Approvals", href: "/learning/external/approvals", audience: "manager" },
+      { key: "learning.calendar", label: "Training Calendar", href: "/learning/calendar" },
     ],
   },
   {

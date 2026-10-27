@@ -13,7 +13,7 @@ import { AssignForm } from "../_components/assign-form";
 import { CourseProgress } from "../_components/progress";
 import { daysUntil, dueLabel } from "../_lib/course";
 
-export const metadata = { title: "My Team Learning" };
+export const metadata = { title: "My Team Courses" };
 
 type Emp = {
   id: string;
@@ -114,9 +114,9 @@ export default async function TeamLearningPage({ searchParams }: { searchParams:
   return (
     <div>
       <PageHeader
-        title="My Team Learning"
+        title="My Team Courses"
         description="Track your team's courses and assign learning with due dates."
-        breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "My Team Learning" }]}
+        breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "My Team Courses" }]}
         actions={
           team.length > 0
             ? assignDialog(

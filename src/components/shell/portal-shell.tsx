@@ -9,7 +9,8 @@ import type { Viewer } from "@/lib/nav";
 import { Avatar } from "@/components/ui/avatar";
 import { Sidebar, SIDEBAR_WIDTHS, type ShellAddon, type ShellUser } from "./sidebar";
 import { GlobalSearch } from "./search";
-import { AlertsMenu, TasksMenu, type NotificationItem, type TaskItem } from "./header-menus";
+import { Assistant } from "./assistant";
+import { AlertsMenu, TasksMenu, type AnnouncementItem, type NotificationItem, type TaskItem } from "./header-menus";
 
 export function PortalShell({
   viewer,
@@ -19,6 +20,7 @@ export function PortalShell({
   tasks,
   notifications,
   unread,
+  announcements,
   initialCollapsed,
   children,
 }: {
@@ -29,6 +31,7 @@ export function PortalShell({
   tasks: TaskItem[];
   notifications: NotificationItem[];
   unread: number;
+  announcements: AnnouncementItem[];
   initialCollapsed: boolean;
   children: ReactNode;
 }) {
@@ -76,8 +79,8 @@ export function PortalShell({
           <GlobalSearch viewer={viewer} />
         </div>
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          {viewer.isManager && <TasksMenu tasks={tasks} />}
-          <AlertsMenu items={notifications} unread={unread} />
+          <TasksMenu tasks={tasks} />
+          <AlertsMenu items={notifications} unread={unread} announcements={announcements} />
           <Link href="/profile" className="ml-1 hidden sm:block" title={user.name}>
             <Avatar name={user.name} src={user.avatarUrl} size="sm" className="ring-slate-200" />
           </Link>
@@ -96,6 +99,8 @@ export function PortalShell({
           onMobileClose={() => setMobileOpen(false)}
         />
       </div>
+
+      <Assistant firstName={user.name.split(" ")[0]} />
 
       <main className="pt-16 transition-[padding] duration-200 lg:pl-[var(--sidebar-w)] print:p-0">
         <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">{children}</div>

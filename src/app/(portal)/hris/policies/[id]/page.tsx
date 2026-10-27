@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, CheckCircle2, FileText, Pencil, ShieldCheck, Tag } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileText, Pencil, ShieldCheck, Tag } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -8,6 +8,8 @@ import { Badge, Card, CardBody, PageHeader, buttonClass } from "@/components/ui"
 import { ActionButton } from "@/components/ui/action-button";
 import { acknowledgePolicy } from "../actions";
 import { toDisplayHtml } from "../_lib/sanitize";
+import { fileKind, formatBytes, isViewable } from "../_lib/files";
+import { FileBadge } from "../_components/file-badge";
 
 export const metadata = { title: "Policy" };
 
@@ -24,6 +26,9 @@ export default async function PolicyPage({ params }: { params: Promise<{ id: str
     supabase.from("policy_acknowledgements").select("acknowledged_at").eq("policy_id", id).eq("employee_id", me.id).maybeSingle(),
   ]);
   if (!policy || (!policy.published && !me.isHR)) notFound();
+  const kind = policy.document_name ? fileKind(policy.document_name, policy.document_type) : null;
+  const viewable = kind ? isViewable(kind) : false;
+  const hasContent = Boolean(policy.content?.trim());
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -64,7 +69,30 @@ export default async function PolicyPage({ params }: { params: Promise<{ id: str
         </div>
         <CardBody className="px-5 py-6 sm:px-8">
           {policy.summary && <p className="mb-4 rounded-lg bg-slate-50 px-4 py-3 text-sm italic text-slate-600">{policy.summary}</p>}
-          <div className="prose-doc text-sm" dangerouslySetInnerHTML={{ __html: toDisplayHtml(policy.content) }} />
+          {kind && (
+            <div className="mb-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center">
+              <FileBadge kind={kind} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-800">{policy.document_name}</p>
+                <p className="text-xs text-slate-500">Documents Size {formatBytes(policy.document_size)}</p>
+              </div>
+              <div className="flex gap-2">
+                {viewable && (
+                  <a href={`/hris/policies/${policy.id}/document`} target="_blank" rel="noopener noreferrer" className={buttonClass("primary")}>
+                    <Eye className="h-4 w-4" /> View document
+                  </a>
+                )}
+                <a href={`/hris/policies/${policy.id}/document?download=1`} className={buttonClass("outline")}>
+                  <Download className="h-4 w-4" /> Download
+                </a>
+              </div>
+            </div>
+          )}
+          {hasContent ? (
+            <div className="prose-doc text-sm" dangerouslySetInnerHTML={{ __html: toDisplayHtml(policy.content ?? "") }} />
+          ) : (
+            !kind && <p className="text-sm text-slate-500">This policy has no content yet.</p>
+          )}
         </CardBody>
 
         {policy.requires_acknowledgement && (

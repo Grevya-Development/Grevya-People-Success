@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { addDays, format, parseISO } from "date-fns";
-import { CalendarClock, FileSignature, ShieldCheck, UserCheck, UserX } from "lucide-react";
+import { CalendarClock, FileSignature, IdCard, ShieldCheck, UserCheck, UserX } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, orgToday } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { Avatar, Card, CardBody, CardHeader, EmptyState, PageHeader, StatusBadge, WidgetCard, buttonClass } from "@/components/ui";
 import { ActionButton } from "@/components/ui/action-button";
 import { ResignForm } from "../_components/resign-form";
+import { FormSection } from "../_components/form-section";
+import { ResignationDetails } from "../_components/resignation-details";
+import { getResignInfo, type ResignInfo } from "../_lib/resign-info";
 import { withdrawResignation } from "../actions";
-import { EXIT_THEME, NOTICE_PERIOD_DAYS, OPEN_STATUSES } from "../_components/shared";
+import { EXIT_THEME, OPEN_STATUSES } from "../_components/shared";
 
 export const metadata = { title: "My Resignation" };
 
@@ -24,8 +26,7 @@ export default async function ResignPage() {
     .limit(1)
     .maybeSingle();
 
-  const today = orgToday();
-  const defaultLastDay = format(addDays(parseISO(today), NOTICE_PERIOD_DAYS), "yyyy-MM-dd");
+  const info = await getResignInfo(supabase, me);
 
   return (
     <div>
@@ -68,8 +69,9 @@ export default async function ResignPage() {
                     <dd className="font-medium text-slate-800">{open.approved_last_day ? formatDate(open.approved_last_day) : "Awaiting HR"}</dd>
                   </div>
                 </dl>
+                <ResignationDetails r={open} />
                 <div>
-                  <p className="text-xs text-slate-500">Detailed reason</p>
+                  <p className="text-xs text-slate-500">Resignee comment</p>
                   <p className="mt-1 whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{open.reason}</p>
                 </div>
                 {open.manager_remarks && (
@@ -106,12 +108,16 @@ export default async function ResignPage() {
               </CardBody>
             </Card>
           ) : (
-            <Card>
-              <CardHeader title="Submit resignation" description="Please fill in the details below. All fields are mandatory." />
-              <CardBody>
-                <ResignForm today={today} defaultLastDay={defaultLastDay} />
-              </CardBody>
-            </Card>
+            <div className="space-y-5">
+              <EmployeeInfo info={info} />
+              <ResignForm
+                today={info.today}
+                relievingDate={info.relievingDate}
+                noticeDays={info.noticeDays}
+                defaultEmail={info.personalEmail ?? info.officialEmail}
+                defaultPhone={(info.phone ?? "").replace(/\D/g, "").slice(-10)}
+              />
+            </div>
           )}
         </div>
 
@@ -150,7 +156,7 @@ export default async function ResignPage() {
                 {[
                   { icon: FileSignature, t: "Submit", d: "Share your reason and preferred last working day." },
                   { icon: UserCheck, t: "Approvals", d: "Your manager, then HR, review the request." },
-                  { icon: CalendarClock, t: `Notice period`, d: `Standard notice is ${NOTICE_PERIOD_DAYS} days; HR confirms your last day.` },
+                  { icon: CalendarClock, t: `Notice period`, d: `Standard notice is ${info.noticeDays} days; HR confirms your last day.` },
                   { icon: ShieldCheck, t: "Clearance", d: "IT, Finance, Admin, HR and your manager sign off before exit." },
                 ].map((s) => (
                   <li key={s.t} className="flex gap-3">
@@ -169,5 +175,34 @@ export default async function ResignPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function EmployeeInfo({ info }: { info: ResignInfo }) {
+  const items: { label: string; value: string; testId?: string }[] = [
+    { label: "Employee Code", value: info.employeeCode },
+    { label: "Employee Name", value: info.employeeName },
+    { label: "Date of Joining", value: info.joiningLabel, testId: "doj" },
+    { label: "Role", value: info.role },
+    { label: "Notice Period", value: `${info.noticeDays} (D)`, testId: "notice" },
+    { label: "Official Email", value: info.officialEmail },
+    { label: "Personal Email", value: info.personalEmail ?? "—" },
+    { label: "Confirmation Status", value: info.confirmationStatus, testId: "confirmation" },
+    { label: "Relieving Date As Per Policy", value: formatDate(info.relievingDate), testId: "relieving" },
+    { label: "Leave Balance on LWD", value: `Earned Leave: ${info.earnedLeaveOnLwd} Days`, testId: "leave-lwd" },
+  ];
+  return (
+    <FormSection step={1} title="Employee Info" icon={<IdCard className="h-4 w-4 text-slate-400" />}>
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((i) => (
+          <div key={i.label} className="min-w-0">
+            <dt className="text-xs text-slate-500">{i.label}</dt>
+            <dd className="mt-0.5 break-words font-medium text-slate-800" data-testid={i.testId}>
+              {i.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </FormSection>
   );
 }

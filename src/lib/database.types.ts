@@ -445,6 +445,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"external_trainings": {
+                  Row: {
+                    "approver_id": string | null,"approver_remarks": string | null,"certificate_path": string | null,"completed_at": string | null,"completion_notes": string | null,"cost": number,"created_at": string,"decided_at": string | null,"employee_id": string,"end_date": string,"id": string,"justification": string,"link": string | null,"mode": string,"provider": string,"start_date": string,"status": string,"title": string,"training_type": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approver_id"?: string | null,"approver_remarks"?: string | null,"certificate_path"?: string | null,"completed_at"?: string | null,"completion_notes"?: string | null,"cost"?: number,"created_at"?: string,"decided_at"?: string | null,"employee_id": string,"end_date": string,"id"?: string,"justification": string,"link"?: string | null,"mode"?: string,"provider": string,"start_date": string,"status"?: string,"title": string,"training_type": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "approver_id"?: string | null,"approver_remarks"?: string | null,"certificate_path"?: string | null,"completed_at"?: string | null,"completion_notes"?: string | null,"cost"?: number,"created_at"?: string,"decided_at"?: string | null,"employee_id"?: string,"end_date"?: string,"id"?: string,"justification"?: string,"link"?: string | null,"mode"?: string,"provider"?: string,"start_date"?: string,"status"?: string,"title"?: string,"training_type"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "external_trainings_approver_id_fkey"
+      columns: ["approver_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "external_trainings_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"faqs": {
                   Row: {
                     "answer": string,"category": string,"created_at": string,"id": string,"question": string,"sort_order": number
@@ -711,6 +737,84 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"learning_path_courses": {
+                  Row: {
+                    "course_id": string,"path_id": string,"position": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "course_id": string,"path_id": string,"position"?: number
+                  }
+                  Update: {
+                    "course_id"?: string,"path_id"?: string,"position"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "learning_path_courses_course_id_fkey"
+      columns: ["course_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "learning_path_courses_path_id_fkey"
+      columns: ["path_id"]
+isOneToOne: false
+      referencedRelation: "learning_paths"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"learning_path_enrollments": {
+                  Row: {
+                    "assigned_by": string | null,"due_date": string | null,"employee_id": string,"id": string,"path_id": string,"started_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assigned_by"?: string | null,"due_date"?: string | null,"employee_id": string,"id"?: string,"path_id": string,"started_at"?: string
+                  }
+                  Update: {
+                    "assigned_by"?: string | null,"due_date"?: string | null,"employee_id"?: string,"id"?: string,"path_id"?: string,"started_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "learning_path_enrollments_assigned_by_fkey"
+      columns: ["assigned_by"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "learning_path_enrollments_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "learning_path_enrollments_path_id_fkey"
+      columns: ["path_id"]
+isOneToOne: false
+      referencedRelation: "learning_paths"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"learning_paths": {
+                  Row: {
+                    "category": string,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"published": boolean,"title": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"published"?: boolean,"title": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "category"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"published"?: boolean,"title"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "learning_paths_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"leave_balances": {
                   Row: {
                     "allocated": number,"employee_id": string,"id": string,"leave_type_id": string,"used": number,"year": number
@@ -911,14 +1015,14 @@ isOneToOne: false
                   ]
                 },"policies": {
                   Row: {
-                    "category": string,"content": string,"created_at": string,"effective_date": string,"id": string,"published": boolean,"requires_acknowledgement": boolean,"summary": string | null,"title": string,"updated_at": string,"version": string
+                    "category": string,"content": string | null,"created_at": string,"document_name": string | null,"document_path": string | null,"document_size": number | null,"document_type": string | null,"effective_date": string,"id": string,"published": boolean,"requires_acknowledgement": boolean,"summary": string | null,"title": string,"updated_at": string,"version": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string,"content": string,"created_at"?: string,"effective_date"?: string,"id"?: string,"published"?: boolean,"requires_acknowledgement"?: boolean,"summary"?: string | null,"title": string,"updated_at"?: string,"version"?: string
+                    "category"?: string,"content"?: string | null,"created_at"?: string,"document_name"?: string | null,"document_path"?: string | null,"document_size"?: number | null,"document_type"?: string | null,"effective_date"?: string,"id"?: string,"published"?: boolean,"requires_acknowledgement"?: boolean,"summary"?: string | null,"title": string,"updated_at"?: string,"version"?: string
                   }
                   Update: {
-                    "category"?: string,"content"?: string,"created_at"?: string,"effective_date"?: string,"id"?: string,"published"?: boolean,"requires_acknowledgement"?: boolean,"summary"?: string | null,"title"?: string,"updated_at"?: string,"version"?: string
+                    "category"?: string,"content"?: string | null,"created_at"?: string,"document_name"?: string | null,"document_path"?: string | null,"document_size"?: number | null,"document_type"?: string | null,"effective_date"?: string,"id"?: string,"published"?: boolean,"requires_acknowledgement"?: boolean,"summary"?: string | null,"title"?: string,"updated_at"?: string,"version"?: string
                   }
                   Relationships: [
                     
@@ -997,14 +1101,14 @@ isOneToOne: false
                   ]
                 },"resignations": {
                   Row: {
-                    "approved_last_day": string | null,"created_at": string,"employee_id": string,"hr_action_at": string | null,"hr_remarks": string | null,"id": string,"manager_action_at": string | null,"manager_remarks": string | null,"notice_period_days": number,"reason": string,"reason_category": string,"requested_last_day": string,"resignation_date": string,"status": string
+                    "approved_last_day": string | null,"attachment_name": string | null,"attachment_path": string | null,"correspondence_email": string | null,"correspondence_phone": string | null,"created_at": string,"employee_id": string,"hr_action_at": string | null,"hr_remarks": string | null,"id": string,"manager_action_at": string | null,"manager_remarks": string | null,"notice_period_days": number,"reason": string,"reason_category": string,"requested_last_day": string,"resignation_date": string,"status": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_last_day"?: string | null,"created_at"?: string,"employee_id": string,"hr_action_at"?: string | null,"hr_remarks"?: string | null,"id"?: string,"manager_action_at"?: string | null,"manager_remarks"?: string | null,"notice_period_days"?: number,"reason": string,"reason_category": string,"requested_last_day": string,"resignation_date"?: string,"status"?: string
+                    "approved_last_day"?: string | null,"attachment_name"?: string | null,"attachment_path"?: string | null,"correspondence_email"?: string | null,"correspondence_phone"?: string | null,"created_at"?: string,"employee_id": string,"hr_action_at"?: string | null,"hr_remarks"?: string | null,"id"?: string,"manager_action_at"?: string | null,"manager_remarks"?: string | null,"notice_period_days"?: number,"reason": string,"reason_category": string,"requested_last_day": string,"resignation_date"?: string,"status"?: string
                   }
                   Update: {
-                    "approved_last_day"?: string | null,"created_at"?: string,"employee_id"?: string,"hr_action_at"?: string | null,"hr_remarks"?: string | null,"id"?: string,"manager_action_at"?: string | null,"manager_remarks"?: string | null,"notice_period_days"?: number,"reason"?: string,"reason_category"?: string,"requested_last_day"?: string,"resignation_date"?: string,"status"?: string
+                    "approved_last_day"?: string | null,"attachment_name"?: string | null,"attachment_path"?: string | null,"correspondence_email"?: string | null,"correspondence_phone"?: string | null,"created_at"?: string,"employee_id"?: string,"hr_action_at"?: string | null,"hr_remarks"?: string | null,"id"?: string,"manager_action_at"?: string | null,"manager_remarks"?: string | null,"notice_period_days"?: number,"reason"?: string,"reason_category"?: string,"requested_last_day"?: string,"resignation_date"?: string,"status"?: string
                   }
                   Relationships: [
                     {
@@ -1107,6 +1211,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"training_registrations": {
+                  Row: {
+                    "attended": boolean | null,"employee_id": string,"id": string,"registered_at": string,"session_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attended"?: boolean | null,"employee_id": string,"id"?: string,"registered_at"?: string,"session_id": string
+                  }
+                  Update: {
+                    "attended"?: boolean | null,"employee_id"?: string,"id"?: string,"registered_at"?: string,"session_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "training_registrations_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "training_registrations_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "training_sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"training_sessions": {
+                  Row: {
+                    "capacity": number,"course_id": string | null,"created_at": string,"created_by": string | null,"description": string | null,"ends_at": string,"id": string,"location": string | null,"meeting_link": string | null,"mode": string,"starts_at": string,"status": string,"title": string,"trainer": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "capacity": number,"course_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"ends_at": string,"id"?: string,"location"?: string | null,"meeting_link"?: string | null,"mode"?: string,"starts_at": string,"status"?: string,"title": string,"trainer": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "capacity"?: number,"course_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"ends_at"?: string,"id"?: string,"location"?: string | null,"meeting_link"?: string | null,"mode"?: string,"starts_at"?: string,"status"?: string,"title"?: string,"trainer"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "training_sessions_course_id_fkey"
+      columns: ["course_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "training_sessions_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"vpf_declarations": {
                   Row: {
                     "actioned_at": string | null,"approver_id": string | null,"approver_remarks": string | null,"created_at": string,"effective_month": string,"employee_id": string,"financial_year": string,"id": string,"percentage": number,"status": string
@@ -1133,13 +1289,70 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"wiki_article_likes": {
+                  Row: {
+                    "article_id": string,"created_at": string,"employee_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "article_id": string,"created_at"?: string,"employee_id": string
+                  }
+                  Update: {
+                    "article_id"?: string,"created_at"?: string,"employee_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "wiki_article_likes_article_id_fkey"
+      columns: ["article_id"]
+isOneToOne: false
+      referencedRelation: "wiki_articles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "wiki_article_likes_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"wiki_articles": {
+                  Row: {
+                    "author_id": string,"category": string,"content": string,"created_at": string,"id": string,"like_count": number,"published_at": string | null,"review_remarks": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"submitted_at": string | null,"tags": (string)[],"title": string,"updated_at": string,"view_count": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"category"?: string,"content"?: string,"created_at"?: string,"id"?: string,"like_count"?: number,"published_at"?: string | null,"review_remarks"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"submitted_at"?: string | null,"tags"?: (string)[],"title": string,"updated_at"?: string,"view_count"?: number
+                  }
+                  Update: {
+                    "author_id"?: string,"category"?: string,"content"?: string,"created_at"?: string,"id"?: string,"like_count"?: number,"published_at"?: string | null,"review_remarks"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"submitted_at"?: string | null,"tags"?: (string)[],"title"?: string,"updated_at"?: string,"view_count"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "wiki_articles_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "wiki_articles_reviewed_by_fkey"
+      columns: ["reviewed_by"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "auth_employee_id":
+            "assign_learning_path":
+{ Args: { "p_department": string,"p_due": string,"p_path": string }; Returns: {
+              "assigned": number,"skipped": number
+            }[]
+                           },
+"auth_employee_id":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "auth_role":
@@ -1174,6 +1387,14 @@ isOneToOne: false
                            },
 "org_today":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"training_session_seats":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "registered": number,"session_id": string
+            }[]
+                           },
+"wiki_record_view":
+{ Args: { "p_article": string }; Returns: number
                            }
           }
           Enums: {

@@ -23,6 +23,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { withdrawResignation } from "../actions";
 import { ExitStepper, buildSteps } from "../_components/exit-stepper";
 import { ClearanceList } from "../_components/clearance-list";
+import { ResignationDetails } from "../_components/resignation-details";
 import { EXIT_THEME, type ResignationWithClearances } from "../_components/shared";
 
 export const metadata = { title: "Resignation Status" };
@@ -110,6 +111,13 @@ export default async function ResignationStatusPage() {
               <dd className="truncate font-medium text-slate-800">{me.manager?.full_name ?? "—"}</dd>
             </div>
           </dl>
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <div>
+              <p className="text-xs text-slate-500">Resignee comment</p>
+              <p className="mt-1 whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{current.reason}</p>
+            </div>
+            <ResignationDetails r={current} />
+          </div>
           {withdrawable && (
             <div className="flex flex-col gap-3 rounded-lg bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-slate-600">Changed your mind? You can withdraw until HR approves your resignation.</p>

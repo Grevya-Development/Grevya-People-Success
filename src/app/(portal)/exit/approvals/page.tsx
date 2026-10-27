@@ -31,6 +31,7 @@ import { LinkTabs } from "@/components/ui/link-tabs";
 import { completeExit, hrApproveResignation, managerApproveResignation, rejectResignation } from "../actions";
 import { ClearanceList } from "../_components/clearance-list";
 import { ResultForm } from "../_components/result-form";
+import { ResignationDetails } from "../_components/resignation-details";
 import { EXIT_THEME, MANAGER_CLEARANCE, type ExitEmployee, type ResignationRow } from "../_components/shared";
 
 export const metadata = { title: "Exit Approvals" };
@@ -215,6 +216,7 @@ export default async function ExitApprovalsPage({ searchParams }: { searchParams
                         </p>
                       </div>
                     </div>
+                    <ResignationDetails r={r} />
                     <div>
                       <div className="mb-1.5 flex items-center justify-between text-xs">
                         <span className="font-medium text-slate-600">Clearance progress</span>
@@ -360,6 +362,7 @@ function ResignationCard({ r, today, children }: { r: Row; today: string; childr
           </div>
         </dl>
         <p className="whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{r.reason}</p>
+        <ResignationDetails r={r} />
         {r.manager_remarks && (
           <p className="text-xs text-slate-600">
             <span className="font-medium">Manager remarks:</span> {r.manager_remarks}

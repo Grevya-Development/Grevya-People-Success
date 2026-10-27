@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpenCheck, Eye, FileText, HelpCircle, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { BookOpenCheck, Eye, FileText, HelpCircle, Paperclip, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { requireHR } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -25,7 +25,9 @@ import { Dialog } from "@/components/ui/dialog";
 import { ActionButton } from "@/components/ui/action-button";
 import { LinkTabs } from "@/components/ui/link-tabs";
 import { deleteFaq, deletePolicy, setPolicyPublished } from "./actions";
-import { FaqForm, PolicyForm } from "./_components/forms";
+import { FaqForm } from "./_components/forms";
+import { PolicyForm } from "./_components/policy-form";
+import { formatBytes } from "../../policies/_lib/files";
 
 export const metadata = { title: "Manage Policies & FAQs" };
 
@@ -34,7 +36,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Person = { id: string; full_name: string | null; employee_code: string; avatar_url: string | null };
 
 export default async function AdminPoliciesPage({ searchParams }: { searchParams: Promise<{ tab?: string; edit?: string }> }) {
-  await requireHR();
+  const me = await requireHR();
   const { tab, edit } = await searchParams;
   const showFaqs = tab === "faqs";
   const supabase = await createClient();
@@ -124,7 +126,12 @@ export default async function AdminPoliciesPage({ searchParams }: { searchParams
           />
           <div className="px-5 py-4">
             {editing ? (
-              <PolicyForm key={editing === "new" ? "new" : editing.id} policy={editing === "new" ? null : editing} categories={policyCategories} />
+              <PolicyForm
+                key={editing === "new" ? "new" : `${editing.id}-${editing.updated_at}`}
+                policy={editing === "new" ? null : editing}
+                categories={policyCategories}
+                userId={me.user_id}
+              />
             ) : (
               <p className="text-sm text-slate-500">
                 This policy no longer exists.{" "}
@@ -225,6 +232,19 @@ export default async function AdminPoliciesPage({ searchParams }: { searchParams
                           {p.title}
                         </Link>
                         <p className="mt-0.5 text-xs text-slate-500">{p.category}</p>
+                        {p.document_name && (
+                          <a
+                            href={`/hris/policies/${p.id}/document`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-[#3753b8] hover:underline"
+                            data-testid="admin-doc"
+                          >
+                            <Paperclip className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{p.document_name}</span>
+                            <span className="shrink-0 text-slate-400">· {formatBytes(p.document_size)}</span>
+                          </a>
+                        )}
                       </TD>
                       <TD>{p.version}</TD>
                       <TD className="whitespace-nowrap">{formatDate(p.effective_date)}</TD>

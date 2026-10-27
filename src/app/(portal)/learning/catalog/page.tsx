@@ -7,7 +7,7 @@ import { cn, humanize } from "@/lib/utils";
 import { CourseCard } from "../_components/course-card";
 import { LEVELS, categoryStyle } from "../_lib/course";
 
-export const metadata = { title: "Course Catalog" };
+export const metadata = { title: "Catalog" };
 
 export default async function CatalogPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const me = await requireEmployee();
@@ -56,7 +56,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
   return (
     <div>
-      <PageHeader title="Course Catalog" description={`${courses.length} course${courses.length === 1 ? "" : "s"} available to you`} breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "Course Catalog" }]} />
+      <PageHeader title="Catalog" description={`${courses.length} course${courses.length === 1 ? "" : "s"} available to you`} breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "Catalog" }]} />
 
       <Card className="mb-4 p-4">
         <form className="grid gap-3 sm:grid-cols-[1fr_180px_160px_auto_auto]" action="/learning/catalog">

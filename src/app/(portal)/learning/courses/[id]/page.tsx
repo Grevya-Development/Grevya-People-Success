@@ -39,7 +39,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
     <div>
       <PageHeader
         title={course.title}
-        breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "Course Catalog", href: "/learning/catalog" }, { label: course.title }]}
+        breadcrumbs={[{ label: "Learning", href: "/learning" }, { label: "Catalog", href: "/learning/catalog" }, { label: course.title }]}
         actions={
           me.isHR ? (
             <Link href={`/learning/admin?edit=${course.id}`} className={buttonClass("outline", "sm")}>

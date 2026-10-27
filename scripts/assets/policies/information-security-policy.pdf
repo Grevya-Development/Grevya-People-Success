@@ -1,0 +1,121 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (Information Security Policy) /Author (Grevya Technologies Pvt. Ltd.) /Subject (IT policy) /Creator (People Success) /Producer (People Success demo seed) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 802 >>
+stream
+0.216 0.325 0.722 rg 0 662 595 180 re f
+1 1 1 rg
+BT /F2 26 Tf 64 750 Td (GREVYA) Tj ET
+BT /F1 11 Tf 64 728 Td (People Success  |  Company Policy) Tj ET
+0.12 0.16 0.23 rg
+BT /F2 30 Tf 64 542 Td (Information Security Policy) Tj ET
+0.35 0.40 0.48 rg
+BT /F1 12 Tf 64 498 Td (Category: IT   |   Version 2.2   |   Effective 01 Feb 2026) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 11 Tf 64 458 Td (Acceptable use, passwords, devices, data classification and incident reporting.) Tj ET
+0.216 0.325 0.722 RG 1.2 w 64 150 m 531 150 l S
+0.35 0.40 0.48 rg
+BT /F1 9 Tf 64 130 Td (Owner: People Success team, Grevya Technologies Pvt. Ltd., Bengaluru) Tj ET
+BT /F1 9 Tf 64 116 Td (Classification: Internal. Do not share outside Grevya without approval from HR.) Tj ET
+0.55 0.58 0.65 rg
+BT /F1 8.5 Tf 277 40 Td (Page 1 of 2) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 3355 >>
+stream
+0.55 0.58 0.65 rg
+BT /F1 8.5 Tf 64 794 Td (Grevya Technologies Pvt. Ltd.  |  Information Security Policy) Tj ET
+BT /F1 8.5 Tf 461 794 Td (v2.2) Tj ET
+0.216 0.325 0.722 RG 0.8 w 64 786 m 531 786 l S
+0.12 0.16 0.23 rg
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 742 Td (Scope) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 722 Td (This policy applies to everyone who uses Grevya systems, devices or data, including) Tj ET
+BT /F1 10.5 Tf 64 707 Td (employees, interns and contractors.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 676 Td (Accounts and passwords) Tj ET
+0.12 0.16 0.23 rg
+BT /F2 10.5 Tf 69 656 Td (-) Tj ET
+BT /F1 10.5 Tf 80 656 Td (Use Single Sign-On with multi-factor authentication for every company application.) Tj ET
+BT /F2 10.5 Tf 69 635 Td (-) Tj ET
+BT /F1 10.5 Tf 80 635 Td (Passwords must be at least 12 characters and must never be shared or reused across) Tj ET
+BT /F1 10.5 Tf 80 620 Td (services.) Tj ET
+BT /F2 10.5 Tf 69 599 Td (-) Tj ET
+BT /F1 10.5 Tf 80 599 Td (Use the company password manager to store credentials.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 568 Td (Devices) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 548 Td (Only company-managed laptops may access customer data. Devices must have disk) Tj ET
+BT /F1 10.5 Tf 64 533 Td (encryption, automatic screen lock after 5 minutes and up-to-date security patches.) Tj ET
+BT /F1 10.5 Tf 64 518 Td (Report a lost or stolen device to IT within 1 hour.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 487 Td (Data classification) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 467 Td (Grevya data is classified as Public, Internal, Confidential or Restricted. Customer) Tj ET
+BT /F1 10.5 Tf 64 452 Td (data and employee personal data are Restricted: store them only in approved systems,) Tj ET
+BT /F1 10.5 Tf 64 437 Td (never download them to personal devices, and share them only with people who need them) Tj ET
+BT /F1 10.5 Tf 64 422 Td (for their role.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 391 Td (Reporting incidents) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 371 Td (Report suspected phishing, malware, data leaks or unauthorised access to) Tj ET
+BT /F1 10.5 Tf 64 356 Td (security@grevya.com or the #security Slack channel immediately and within 1 hour at) Tj ET
+BT /F1 10.5 Tf 64 341 Td (most. Do not try to investigate on your own.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 310 Td (Compliance and exceptions) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 290 Td (Violations of this policy may lead to disciplinary action up to and including) Tj ET
+BT /F1 10.5 Tf 64 275 Td (termination of employment, in line with the Grevya Code of Conduct and applicable law.) Tj ET
+BT /F1 10.5 Tf 64 254 Td (Exceptions must be approved in writing by the People Success team and the relevant) Tj ET
+BT /F1 10.5 Tf 64 239 Td (function head. Approved exceptions are recorded in People Success and reviewed) Tj ET
+BT /F1 10.5 Tf 64 224 Td (annually.) Tj ET
+0.216 0.325 0.722 rg
+BT /F2 13 Tf 64 193 Td (Review and contact) Tj ET
+0.12 0.16 0.23 rg
+BT /F1 10.5 Tf 64 173 Td (This policy is reviewed at least once a year by the People Success team. Questions can) Tj ET
+BT /F1 10.5 Tf 64 158 Td (be raised through More Apps > HR Helpdesk in the People Success portal or by writing) Tj ET
+BT /F1 10.5 Tf 64 143 Td (to people@grevya.com.) Tj ET
+0.55 0.58 0.65 rg
+BT /F1 8.5 Tf 277 40 Td (Page 2 of 2) Tj ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000224 00000 n 
+0000000326 00000 n 
+0000000508 00000 n 
+0000000644 00000 n 
+0000001497 00000 n 
+0000001633 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R /Info 5 0 R >>
+startxref
+5040
+%%EOF
