@@ -19,3 +19,6 @@ export function isPriority(v: string | null): v is TicketPriority {
 export function isStatus(v: string | null): v is TicketStatus {
   return !!v && (TICKET_STATUSES as readonly string[]).includes(v);
 }
+
+/** Roles that make up the HR team (super admins are HR too). */
+export const HR_ROLES: readonly string[] = ["hr_admin", "super_admin"];

@@ -9,7 +9,10 @@ import { cn, orgToday } from "@/lib/utils";
 export const metadata = { title: "More Apps" };
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+/** Internal portal path like "/recruit/jobs" (not protocol-relative "//host"). */
+const isInternal = (u: string) => /^\/(?![\/\\])/.test(u);
 const safeUrl = (u: string) => {
+  if (isInternal(u)) return u;
   try {
     const url = new URL(u);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
@@ -18,6 +21,7 @@ const safeUrl = (u: string) => {
   }
 };
 const hostOf = (u: string) => {
+  if (isInternal(u)) return "People Success";
   try {
     return new URL(u).host.replace(/^www\./, "");
   } catch {
@@ -129,7 +133,11 @@ export default async function MoreAppsPage() {
                 </>
               );
               const cls = "group flex items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition";
-              return href ? (
+              return href && isInternal(href) ? (
+                <Link key={a.id} href={href} className={cn(cls, "hover:-translate-y-0.5 hover:shadow-md")}>
+                  {body}
+                </Link>
+              ) : href ? (
                 <a key={a.id} href={href} target="_blank" rel="noopener noreferrer" className={cn(cls, "hover:-translate-y-0.5 hover:shadow-md")}>
                   {body}
                 </a>

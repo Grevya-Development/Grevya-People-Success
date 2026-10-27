@@ -28,15 +28,17 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
   const { data: c } = await supabase
     .from("candidates")
     .select(
-      "*, job:job_openings!candidates_job_id_fkey(id, title, status, hiring_manager_id), referrer:employees!candidates_referred_by_fkey(full_name, employee_code, avatar_url)",
+      // Not "*": notes are column-restricted and read through candidate_notes().
+      "id, job_id, full_name, email, phone, current_company, experience_years, linkedin_url, resume_path, source, stage, created_at, job:job_openings!candidates_job_id_fkey(id, title, status, hiring_manager_id), referrer:employees!candidates_referred_by_fkey(full_name, employee_code, avatar_url)",
     )
     .eq("id", id)
     .maybeSingle();
   if (!c) notFound();
   if (!me.isHR && c.job?.hiring_manager_id !== me.id) redirect("/home?denied=1");
 
-  const [resumeUrl, { data: ivData }, options] = await Promise.all([
+  const [resumeUrl, { data: notes }, { data: ivData }, options] = await Promise.all([
     signedDocumentUrl(c.resume_path),
+    supabase.rpc("candidate_notes", { cand: c.id }),
     supabase
       .from("interviews")
       .select("id, round_name, scheduled_at, mode, rating, feedback, result, interviewer:employees!interviews_interviewer_id_fkey(full_name, avatar_url)")
@@ -155,7 +157,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
           <Card>
             <CardHeader title="Notes" description="Visible to HR and the hiring manager" />
             <CardBody>
-              <NotesForm candidateId={c.id} notes={c.notes} />
+              <NotesForm candidateId={c.id} notes={notes ?? null} />
             </CardBody>
           </Card>
         </div>

@@ -5,7 +5,7 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { str } from "@/lib/utils";
-import { isCategory, isPriority, isStatus, ticketRef } from "./_lib/constants";
+import { HR_ROLES, isCategory, isPriority, isStatus, ticketRef } from "./_lib/constants";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -112,7 +112,7 @@ export async function assignTicket(_prev: ActionState, fd: FormData): Promise<Ac
   if (assignee) {
     if (!UUID.test(assignee)) return fail("Choose a valid assignee");
     const { data: emp } = await supabase.from("employees").select("id, role, status").eq("id", assignee).maybeSingle();
-    if (!emp || emp.role !== "hr_admin" || emp.status === "exited") return fail("Tickets can only be assigned to active HR team members");
+    if (!emp || !HR_ROLES.includes(emp.role) || emp.status === "exited") return fail("Tickets can only be assigned to active HR team members");
   }
   if ((assignee ?? null) === ticket.assigned_to) return ok("No change");
 

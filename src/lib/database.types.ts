@@ -1151,6 +1151,9 @@ isOneToOne: false
 "candidate_exists":
 { Args: { "p_email": string,"p_job": string }; Returns: boolean
                            },
+"candidate_notes":
+{ Args: { "cand": string }; Returns: string
+                           },
 "is_above_me":
 { Args: { "emp": string }; Returns: boolean
                            },
@@ -1162,6 +1165,9 @@ isOneToOne: false
                            },
 "is_manager_of":
 { Args: { "emp": string }; Returns: boolean
+                           },
+"is_super_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "notify":
 { Args: { "emp": string,"p_body": string,"p_link": string,"p_title": string }; Returns: undefined

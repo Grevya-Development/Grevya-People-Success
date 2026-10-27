@@ -13,6 +13,14 @@ import { toggleFavorite, signOut } from "@/app/(portal)/_actions";
 export type ShellUser = { name: string; avatarUrl: string | null; designation: string | null; code: string };
 export type ShellAddon = { id: string; name: string; url: string; color: string; description: string | null };
 
+/** Safe link target for an add-on: in-portal path, or http(s) URL. Anything else is dropped. */
+function addonLink(url: string): { href: string; external: boolean } | null {
+  const u = url.trim();
+  if (u.startsWith("/") && !u.startsWith("//")) return { href: u, external: false };
+  if (/^https?:\/\//i.test(u)) return { href: u, external: true };
+  return null;
+}
+
 const EXPANDED_W = 288;
 const COLLAPSED_W = 76;
 const HEADER_H = 64;
@@ -504,22 +512,29 @@ function ModuleItems({
           </Link>
           <p className="px-1 pt-3 text-sm font-semibold text-slate-700">Add-ons</p>
           {addons.length === 0 && <p className="px-1 text-xs text-slate-500">No add-ons configured yet.</p>}
-          {addons.map((a) => (
-            <a
-              key={a.id}
-              href={a.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-lg px-2 py-2 text-[15px] text-slate-700 hover:bg-slate-50"
-              title={a.description ?? a.name}
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" style={{ backgroundColor: a.color }}>
-                {a.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="flex-1 truncate">{a.name}</span>
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-            </a>
-          ))}
+          {addons.map((a) => {
+            const link = addonLink(a.url);
+            if (!link) return null;
+            const inner = (
+              <>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" style={{ backgroundColor: a.color }}>
+                  {a.name.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="flex-1 truncate">{a.name}</span>
+                {link.external && <ExternalLink className="h-3.5 w-3.5 text-slate-400" />}
+              </>
+            );
+            const cls = "flex items-center gap-3 rounded-lg px-2 py-2 text-[15px] text-slate-700 hover:bg-slate-50";
+            return link.external ? (
+              <a key={a.id} href={link.href} target="_blank" rel="noopener noreferrer" className={cls} title={a.description ?? a.name}>
+                {inner}
+              </a>
+            ) : (
+              <Link key={a.id} href={link.href} className={cls} title={a.description ?? a.name}>
+                {inner}
+              </Link>
+            );
+          })}
         </>
       )}
     </div>
@@ -585,11 +600,19 @@ function MobileItems({ module: m, viewer, addons }: { module: NavModule; viewer:
           ),
         )}
       {m.key === "apps" &&
-        addons.map((a) => (
-          <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className={leafClass}>
-            {a.name} ↗
-          </a>
-        ))}
+        addons.map((a) => {
+          const link = addonLink(a.url);
+          if (!link) return null;
+          return link.external ? (
+            <a key={a.id} href={link.href} target="_blank" rel="noopener noreferrer" className={leafClass}>
+              {a.name} ↗
+            </a>
+          ) : (
+            <Link key={a.id} href={link.href} className={leafClass}>
+              {a.name}
+            </Link>
+          );
+        })}
     </>
   );
 }

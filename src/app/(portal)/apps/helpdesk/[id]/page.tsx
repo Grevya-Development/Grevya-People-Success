@@ -9,7 +9,7 @@ import { cn, formatDateTime, humanize } from "@/lib/utils";
 import { InlineSelect } from "../../_components/inline-select";
 import { PriorityBadge } from "../../_components/helpdesk-ui";
 import { addTicketComment, assignTicket, setTicketStatus } from "../actions";
-import { TICKET_STATUSES, ticketRef } from "../_lib/constants";
+import { HR_ROLES, TICKET_STATUSES, ticketRef } from "../_lib/constants";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -38,7 +38,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       .eq("ticket_id", id)
       .order("created_at", { ascending: true }),
     isStaff
-      ? supabase.from("employees").select("id, full_name").eq("role", "hr_admin").neq("status", "exited").order("first_name")
+      ? supabase.from("employees").select("id, full_name").in("role", [...HR_ROLES]).neq("status", "exited").order("first_name")
       : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
   ]);
 

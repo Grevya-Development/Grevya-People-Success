@@ -13,7 +13,8 @@ export const metadata = { title: "Add-ons" };
 type Addon = Tables<"addons">;
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 const safeColor = (c: string) => (HEX_RE.test(c) ? c : "#64748b");
-const safeUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : undefined);
+const isInternal = (u: string) => /^\/(?![\/\\])/.test(u);
+const safeUrl = (u: string) => (/^https?:\/\//i.test(u) || isInternal(u) ? u : undefined);
 
 function AddonIcon({ addon, size = 36 }: { addon: Pick<Addon, "name" | "color">; size?: number }) {
   return (
@@ -36,7 +37,7 @@ function AddonForm({ addon, nextSort }: { addon?: Addon; nextSort: number }) {
           <Input name="name" defaultValue={addon?.name} required maxLength={80} placeholder="e.g. Slack" />
         </Field>
         <Field label="URL" required>
-          <Input name="url" type="url" defaultValue={addon?.url} required placeholder="https://" />
+          <Input name="url" type="text" inputMode="url" defaultValue={addon?.url} required placeholder="https://… or /recruit/jobs" />
         </Field>
         <Field label="Description" className="sm:col-span-2">
           <Textarea name="description" defaultValue={addon?.description ?? ""} rows={2} maxLength={300} placeholder="Shown under the tile on More Apps" />
@@ -89,7 +90,7 @@ export default async function AddonsAdminPage() {
           <EmptyState icon={Puzzle} title="No add-ons yet" description="Add links to tools your teams use every day — chat, ticketing, travel, insurance portals and more." />
         </Card>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader title="All add-ons" description={`${addons.length} total · ${active.length} active`} />
             <Table>

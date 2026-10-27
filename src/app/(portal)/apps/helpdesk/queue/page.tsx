@@ -7,7 +7,7 @@ import { formatDateTime, humanize } from "@/lib/utils";
 import { InlineSelect } from "../../_components/inline-select";
 import { PriorityBadge, TicketRef } from "../../_components/helpdesk-ui";
 import { assignTicket, setTicketStatus } from "../actions";
-import { PRIORITY_RANK, TICKET_CATEGORIES, TICKET_PRIORITIES, TICKET_STATUSES, isCategory, isPriority, isStatus } from "../_lib/constants";
+import { HR_ROLES, PRIORITY_RANK, TICKET_CATEGORIES, TICKET_PRIORITIES, TICKET_STATUSES, isCategory, isPriority, isStatus } from "../_lib/constants";
 
 export const metadata = { title: "Helpdesk Queue" };
 
@@ -46,7 +46,7 @@ export default async function HelpdeskQueuePage({ searchParams }: { searchParams
 
   const [{ data }, { data: hrTeam }, { data: allActive }] = await Promise.all([
     query,
-    supabase.from("employees").select("id, full_name").eq("role", "hr_admin").neq("status", "exited").order("first_name"),
+    supabase.from("employees").select("id, full_name").in("role", [...HR_ROLES]).neq("status", "exited").order("first_name"),
     supabase.from("helpdesk_tickets").select("status, priority, assigned_to").in("status", ["open", "in_progress"]),
   ]);
 

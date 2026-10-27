@@ -31,11 +31,15 @@ export async function saveAddon(_prev: ActionState, fd: FormData): Promise<Actio
   if (description && description.length > 300) return fail("Description must be under 300 characters");
   const url = str(fd, "url");
   if (!url) return fail("URL is required");
-  try {
-    const u = new URL(url);
-    if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
-  } catch {
-    return fail("URL must be a valid http(s) link");
+  // Internal portal paths ("/recruit/jobs") or absolute http(s) links.
+  const internal = /^\/(?![\/\\])\S*$/.test(url);
+  if (!internal) {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
+    } catch {
+      return fail("URL must be a valid http(s) link or a portal path starting with /");
+    }
   }
   const color = (str(fd, "color") ?? "#2563eb").toLowerCase();
   if (!HEX_RE.test(color)) return fail("Colour must be a hex value like #2563eb");
