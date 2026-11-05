@@ -18,14 +18,14 @@ export function AvatarUploader({ employeeId, name, src }: { employeeId: string; 
   }, [preview]);
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <Avatar name={name} src={preview ?? src} size="xl" className="ring-4 ring-[#dce5fa]" />
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+      <Avatar name={name} src={preview ?? src} size="xl" className="shrink-0 ring-4 ring-[#dce5fa]" />
       <div className="min-w-0 flex-1">
-        <ActionForm action={updateAvatar} successMessage="Profile photo updated" onSuccess={() => setPreview(null)} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <ActionForm action={updateAvatar} successMessage="Profile photo updated" onSuccess={() => setPreview(null)} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="employee_id" value={employeeId} />
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-600 hover:border-[#5b74d6] hover:bg-[#f5f7fe]">
-            <Camera className="h-4 w-4 text-[#3753b8]" />
-            <span className="truncate">{preview ? "Image selected — click Upload" : "Choose an image (JPG/PNG, max 2 MB)"}</span>
+          <label className="inline-flex min-w-0 max-w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-600 hover:border-[#5b74d6] hover:bg-[#f5f7fe]">
+            <Camera className="h-4 w-4 shrink-0 text-[#3753b8]" />
+            <span className="min-w-0 truncate">{preview ? "Image selected — click Upload" : "Choose an image (JPG/PNG, max 2 MB)"}</span>
             <input
               type="file"
               name="avatar"
@@ -37,7 +37,7 @@ export function AvatarUploader({ employeeId, name, src }: { employeeId: string; 
               }}
             />
           </label>
-          <SubmitButton size="sm" disabled={!preview}>
+          <SubmitButton size="sm" disabled={!preview} className="shrink-0">
             Upload
           </SubmitButton>
         </ActionForm>

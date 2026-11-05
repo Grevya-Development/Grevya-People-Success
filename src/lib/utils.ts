@@ -95,6 +95,19 @@ export function greeting(date = new Date()) {
 }
 
 /** Read a trimmed string from FormData ("" -> null). */
+/**
+ * Indian mobile number: exactly 10 digits starting 6–9, optionally prefixed
+ * with +91 / 91 / 0; spaces and dashes allowed. Use as an <input pattern>.
+ */
+export const MOBILE_PATTERN = String.raw`(\+?91|0)?[\s\-]*[6-9]([\s\-]*[0-9]){9}`;
+export const MOBILE_HINT = "Enter a 10-digit mobile number, e.g. +91 98765 43210";
+
+/** Normalises a valid mobile number to "+91 9876543210"; null when invalid. */
+export function normalizeMobile(value: string): string | null {
+  const m = /^(?:\+?91|0)?([6-9]\d{9})$/.exec(value.replace(/[\s-]/g, ""));
+  return m ? `+91 ${m[1]}` : null;
+}
+
 export function str(fd: FormData, key: string): string | null {
   const v = fd.get(key);
   if (typeof v !== "string") return null;

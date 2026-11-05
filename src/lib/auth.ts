@@ -24,27 +24,24 @@ export type CurrentEmployee = Tables<"employees"> & {
 /** Signed-in employee for this request (deduplicated per request). */
 export const getCurrentEmployee = cache(async (): Promise<CurrentEmployee | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // getClaims() verifies the JWT locally (asymmetric keys), saving a round trip to Supabase Auth.
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId) return null;
 
-  const { data: emp } = await supabase
+  // One query: the employee, their manager, and a count of their (non-exited) direct reports.
+  const { data } = await supabase
     .from("employees")
     .select(
-      "*, department:departments(name), designation:designations(title), location:locations(name), manager:manager_id(id, full_name, avatar_url)",
+      "*, department:departments(name), designation:designations(title), location:locations(name), manager:manager_id(id, full_name, avatar_url), reports:employees!manager_id(count)",
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
+    .neq("reports.status", "exited")
     .maybeSingle();
-  if (!emp) return null;
+  if (!data) return null;
 
-  const { count } = await supabase
-    .from("employees")
-    .select("id", { count: "exact", head: true })
-    .eq("manager_id", emp.id)
-    .neq("status", "exited");
-
-  const reportCount = count ?? 0;
+  const { reports, ...emp } = data as typeof data & { reports: { count: number }[] | null };
+  const reportCount = reports?.[0]?.count ?? 0;
   const isSuperAdmin = emp.role === "super_admin";
   const isHR = isSuperAdmin || emp.role === "hr_admin";
   return {
@@ -61,10 +58,8 @@ export async function requireEmployee(): Promise<CurrentEmployee> {
   const me = await getCurrentEmployee();
   if (!me) {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    redirect(user ? "/no-access" : "/login");
+    const { data } = await supabase.auth.getClaims();
+    redirect(data?.claims?.sub ? "/no-access" : "/login");
   }
   return me;
 }

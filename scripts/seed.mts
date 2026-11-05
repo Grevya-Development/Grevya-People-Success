@@ -165,7 +165,7 @@ async function seedReference() {
     ["2026-09-14", "Ganesh Chaturthi", "public"],
     ["2026-10-02", "Gandhi Jayanti", "public"],
     ["2026-10-20", "Vijayadashami", "public"],
-    ["2026-11-10", "Deepavali", "public"],
+    ["2026-11-08", "Deepavali", "public"],
     ["2026-11-27", "Kanakadasa Jayanti", "optional"],
     ["2026-12-25", "Christmas", "public"],
     ["2027-01-01", "New Year's Day", "optional"],
@@ -748,7 +748,7 @@ async function seedDemo() {
   ]);
   await ins("announcements", [
     { title: "Welcome to People Success 🎉", body: "Our new HR portal is live! Apply leave, check payslips, set goals and raise HR tickets — all in one place. Tap ♡ on pages you use often to pin them to Home.", pinned: true, created_by: E.ananya.id },
-    { title: "Deepavali holiday on 10 November", body: "Office will remain closed on Tuesday, 10 November for Deepavali. Wishing you and your family a joyful festival of lights!", created_by: E.divya.id },
+    { title: "Deepavali on 8 November", body: "Deepavali falls on Sunday, 8 November. Wishing you and your family a joyful festival of lights!", created_by: E.divya.id },
     { title: "FY 2026-27 goal setting is open", body: "Please add your goals for the annual cycle and submit them to your manager by 15 November.", created_by: E.ananya.id },
   ]);
 

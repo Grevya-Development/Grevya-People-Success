@@ -5,7 +5,7 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAvatar } from "@/lib/storage";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
-import { str, bool, orgToday } from "@/lib/utils";
+import { str, bool, orgToday, normalizeMobile, MOBILE_HINT } from "@/lib/utils";
 import { UUID_RE, BLOOD_GROUPS, MARITAL_STATUSES, GENDERS } from "./_lib/shared";
 
 const PHONE_RE = /^\+?[0-9][0-9\s-]{6,17}$/;
@@ -42,14 +42,15 @@ export async function updatePersonal(_prev: ActionState, fd: FormData): Promise<
   if ("error" in ctx) return fail(ctx.error!);
   const { supabase, target } = ctx;
 
-  const phone = str(fd, "phone");
+  const rawPhone = str(fd, "phone");
+  const phone = rawPhone ? normalizeMobile(rawPhone) : null;
   const gender = str(fd, "gender");
   const dob = str(fd, "date_of_birth");
   const bloodGroup = str(fd, "blood_group");
   const marital = str(fd, "marital_status");
   const bio = str(fd, "bio");
 
-  if (phone && !PHONE_RE.test(phone)) return fail("Enter a valid mobile number (digits, spaces, + or -)");
+  if (rawPhone && !phone) return fail(MOBILE_HINT);
   if (gender && !GENDERS.some((g) => g.value === gender)) return fail("Choose a valid gender");
   if (bloodGroup && !(BLOOD_GROUPS as readonly string[]).includes(bloodGroup)) return fail("Choose a valid blood group");
   if (marital && !MARITAL_STATUSES.some((m) => m.value === marital)) return fail("Choose a valid marital status");

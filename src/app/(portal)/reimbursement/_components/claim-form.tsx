@@ -37,6 +37,8 @@ export function ClaimForm({
   const [amount, setAmount] = useState(defaults ? String(defaults.amount) : "");
   const cat = categories.find((c) => c.id === categoryId);
   const over = cat?.max_amount != null && Number(amount) > Number(cat.max_amount);
+  // Before a category is picked, mark the receipt required if every category needs one.
+  const receiptRequired = cat ? cat.requires_receipt : categories.length > 0 && categories.every((c) => c.requires_receipt);
   const setIntent = (v: "draft" | "submit") => {
     if (intentRef.current) intentRef.current.value = v;
   };
@@ -94,14 +96,10 @@ export function ClaimForm({
       </Field>
 
       <Field
-        label={
-          <>
-            Receipt / bill
-            {cat?.requires_receipt && <span className="ml-0.5 text-red-500">*</span>}
-          </>
-        }
+        label="Receipt / bill"
         htmlFor="receipt"
-        hint={cat?.requires_receipt ? "Required to submit. PDF or image, up to 10 MB." : "PDF or image, up to 10 MB."}
+        required={receiptRequired}
+        hint={receiptRequired ? "Required to submit. PDF or image, up to 10 MB." : "PDF or image, up to 10 MB."}
       >
         {defaults?.receipt_name && (
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">

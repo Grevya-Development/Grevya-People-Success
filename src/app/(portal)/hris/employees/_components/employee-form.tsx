@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button, buttonClass, Card, CardBody, CardHeader, Checkbox, Field, FormGrid, Input, Select } from "@/components/ui";
-import { humanize } from "@/lib/utils";
+import { humanize, MOBILE_HINT, MOBILE_PATTERN } from "@/lib/utils";
 import { createEmployee, updateEmployee } from "../actions";
 import { EMPLOYMENT_TYPES, GENDERS, ROLES, ROLE_LABELS, STATUSES, isAdminRole, type EmployeeFormValues, type EmployeeResult, type Option } from "../_lib";
 import { PasswordReveal } from "./password-reveal";
@@ -105,7 +105,7 @@ export function EmployeeForm({
               <Input id="email" name="email" type="email" defaultValue={v.email} required maxLength={120} />
             </Field>
             <Field label="Mobile" htmlFor="phone">
-              <Input id="phone" name="phone" type="tel" defaultValue={v.phone ?? ""} placeholder="+91 98765 43210" maxLength={20} />
+              <Input id="phone" name="phone" type="tel" defaultValue={v.phone ?? ""} placeholder="+91 98765 43210" maxLength={20} inputMode="tel" pattern={MOBILE_PATTERN} title={MOBILE_HINT} />
             </Field>
             <Field label="Gender" htmlFor="gender">
               <Select id="gender" name="gender" defaultValue={v.gender ?? ""}>

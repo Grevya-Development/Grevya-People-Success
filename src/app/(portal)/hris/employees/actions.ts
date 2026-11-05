@@ -5,12 +5,11 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dbError } from "@/lib/actions";
-import { str, bool, orgToday } from "@/lib/utils";
+import { str, bool, orgToday, normalizeMobile, MOBILE_HINT } from "@/lib/utils";
 import { EMPLOYMENT_TYPES, GENDERS, ROLES, STATUSES, UUID_RE, isAdminRole, type EmployeeResult } from "./_lib";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const PHONE_RE = /^\+?[\d\s()-]{7,20}$/;
 const CODE_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$/;
 
 const failure = (error: string): EmployeeResult => ({ ok: false, error });
@@ -47,7 +46,8 @@ function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
   const last_name = str(fd, "last_name") ?? "";
   const email = str(fd, "email")?.toLowerCase() ?? null;
   const employee_code = str(fd, "employee_code")?.toUpperCase() ?? null;
-  const phone = str(fd, "phone");
+  const rawPhone = str(fd, "phone");
+  const phone = rawPhone ? normalizeMobile(rawPhone) : null;
   const gender = str(fd, "gender");
   const date_of_birth = str(fd, "date_of_birth");
   const date_of_joining = str(fd, "date_of_joining");
@@ -64,7 +64,7 @@ function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
   if (!email || !EMAIL_RE.test(email) || email.length > 120) return { error: "Enter a valid work email" };
   if (!employee_code || !CODE_RE.test(employee_code))
     return { error: "Employee code must be 2–20 letters, digits, '-' or '_'" };
-  if (phone && !PHONE_RE.test(phone)) return { error: "Enter a valid phone number" };
+  if (rawPhone && !phone) return { error: MOBILE_HINT };
   if (gender && !(GENDERS as readonly string[]).includes(gender)) return { error: "Invalid gender" };
   if (!date_of_joining || !validDate(date_of_joining)) return { error: "Date of joining is required" };
   if (date_of_birth) {

@@ -23,9 +23,10 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() refreshes an expired session and verifies the JWT locally
+  // (no network call to Supabase Auth on every request).
+  const { data: auth } = await supabase.auth.getClaims();
+  const user = auth?.claims?.sub ? auth.claims : null;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));

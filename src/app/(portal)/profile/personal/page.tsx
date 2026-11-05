@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Lock } from "lucide-react";
 import { buttonClass, Card, CardBody, CardHeader, Field, FormGrid, Input, PageHeader, Select, Textarea } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
-import { orgToday } from "@/lib/utils";
+import { orgToday, MOBILE_HINT, MOBILE_PATTERN } from "@/lib/utils";
 import { resolveTarget, loadEmployee, loadPrivate } from "../_lib/load";
 import { BLOOD_GROUPS, GENDERS, MARITAL_STATUSES, mask, profileHref } from "../_lib/shared";
 import { updatePersonal, updatePrivate } from "../actions";
@@ -72,8 +72,8 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
               <ActionForm action={updatePersonal} resetOnSuccess={false} successMessage="Personal details updated">
                 <input type="hidden" name="employee_id" value={targetId} />
                 <FormGrid>
-                  <Field label="Mobile Number" htmlFor="phone">
-                    <Input id="phone" name="phone" type="tel" defaultValue={emp.phone ?? ""} placeholder="+91 98765 43210" maxLength={20} />
+                  <Field label="Mobile Number" htmlFor="phone" hint="10 digits, e.g. +91 98765 43210">
+                    <Input id="phone" name="phone" type="tel" defaultValue={emp.phone ?? ""} placeholder="+91 98765 43210" maxLength={20} inputMode="tel" pattern={MOBILE_PATTERN} title={MOBILE_HINT} />
                   </Field>
                   <Field label="Date of Birth" htmlFor="date_of_birth">
                     <Input id="date_of_birth" name="date_of_birth" type="date" defaultValue={emp.date_of_birth ?? ""} max={orgToday()} />
