@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/shell/portal-shell";
 import type { TaskItem } from "@/components/shell/header-menus";
 import { orgToday } from "@/lib/utils";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const me = await requireEmployee();
@@ -70,7 +71,7 @@ async function loadTasks(supabase: Client, meId: string, isHR: boolean): Promise
     ...base,
     { label: "Letter requests", href: "/hris/admin/letters", count: letters.count ?? 0 },
     { label: "Payroll declarations", href: "/payroll/admin", count: (vpf.count ?? 0) + (fbp.count ?? 0) + (inv.count ?? 0) },
-    { label: "Open helpdesk tickets", href: "/apps/helpdesk/queue", count: tickets.count ?? 0 },
+    ...(SERVICE_DESK_URL ? [] : [{ label: "Open helpdesk tickets", href: "/apps/helpdesk/queue", count: tickets.count ?? 0 }]),
   ];
 }
 

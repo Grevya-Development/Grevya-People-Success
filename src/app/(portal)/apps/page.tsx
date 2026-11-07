@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import { ArrowUpRight, FileCheck2, LifeBuoy, ListChecks, Puzzle, Settings2, type LucideIcon } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -57,15 +58,17 @@ export default async function MoreAppsPage() {
       adminLabel: "Manage forms",
     },
     {
-      name: "HR Helpdesk",
-      description: "Raise and track queries about payroll, leave, access, policies and letters.",
-      href: "/apps/helpdesk",
+      name: SERVICE_DESK_URL ? "Service Desk" : "HR Helpdesk",
+      description: SERVICE_DESK_URL
+        ? "Get help from IT and HR: report an issue, request a service and track your requests."
+        : "Raise and track queries about payroll, leave, access, policies and letters.",
+      href: SERVICE_DESK_URL ?? "/apps/helpdesk",
       icon: LifeBuoy,
       color: "bg-[#5b74d6]",
       tint: "bg-[#e4e9fa]",
-      badge: openTickets ? `${openTickets} open ${openTickets === 1 ? "ticket" : "tickets"}` : "No open tickets",
-      adminHref: "/apps/helpdesk/queue",
-      adminLabel: "Helpdesk queue",
+      badge: SERVICE_DESK_URL ? "IT & HR support" : openTickets ? `${openTickets} open ${openTickets === 1 ? "ticket" : "tickets"}` : "No open tickets",
+      adminHref: SERVICE_DESK_URL ? `${SERVICE_DESK_URL}/desk` : "/apps/helpdesk/queue",
+      adminLabel: SERVICE_DESK_URL ? "Agent workspace" : "Helpdesk queue",
     },
   ];
 

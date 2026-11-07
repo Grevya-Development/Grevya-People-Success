@@ -1,3 +1,4 @@
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import {
   FileText,
   Target,
@@ -238,7 +239,7 @@ export const MODULES: NavModule[] = [
     theme: t("bg-[#eef1f6]", "hover:bg-[#e2e7ef]", "text-[#475569]", "bg-[#64748b]"),
     items: [
       { key: "apps.declarations", label: "Declaration App", href: "/apps/declarations" },
-      { key: "apps.helpdesk", label: "HR Helpdesk", href: "/apps/helpdesk" },
+      { key: "apps.helpdesk", label: SERVICE_DESK_URL ? "Service Desk" : "HR Helpdesk", href: "/apps/helpdesk" },
     ],
   },
   {
@@ -260,7 +261,7 @@ export const MODULES: NavModule[] = [
       { key: "admin.exit", label: "Exit Management", href: "/exit/approvals" },
       { key: "admin.learning", label: "Learning Admin", href: "/learning/admin" },
       { key: "admin.recruit", label: "Recruitment", href: "/recruit/admin" },
-      { key: "admin.helpdesk", label: "Helpdesk Queue", href: "/apps/helpdesk/queue" },
+      { key: "admin.helpdesk", label: SERVICE_DESK_URL ? "Service Desk (agents)" : "Helpdesk Queue", href: "/apps/helpdesk/queue" },
       { key: "admin.declarations", label: "Declaration Forms", href: "/apps/declarations/admin" },
       { key: "admin.announcements", label: "Announcements", href: "/admin/announcements" },
       { key: "admin.addons", label: "Add-ons", href: "/admin/addons" },

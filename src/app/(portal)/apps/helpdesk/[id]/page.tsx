@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import { CheckCircle2, Lock, MessageSquare, RotateCcw } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
+  if (SERVICE_DESK_URL) redirect(`${SERVICE_DESK_URL}/requests/legacy/${id}`);
   const me = await requireEmployee();
   const supabase = await createClient();
 

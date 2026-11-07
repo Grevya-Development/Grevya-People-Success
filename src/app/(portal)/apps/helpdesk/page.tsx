@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import { CircleCheck, Clock, Inbox, LifeBuoy, ListChecks, Plus } from "lucide-react";
 import { requireEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +14,7 @@ import { isStatus } from "./_lib/constants";
 export const metadata = { title: "HR Helpdesk" };
 
 export default async function HelpdeskPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  if (SERVICE_DESK_URL) redirect(`${SERVICE_DESK_URL}/requests`);
   const me = await requireEmployee();
   const { status } = await searchParams;
   const filter = isStatus(status ?? null) ? status! : null;

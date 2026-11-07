@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import Link from "next/link";
 import { AlertTriangle, Clock, Inbox, LifeBuoy, Search, UserX } from "lucide-react";
 import { requireHR } from "@/lib/auth";
@@ -15,6 +17,7 @@ type SP = { status?: string; priority?: string; category?: string; assignee?: st
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function HelpdeskQueuePage({ searchParams }: { searchParams: Promise<SP> }) {
+  if (SERVICE_DESK_URL) redirect(`${SERVICE_DESK_URL}/desk`);
   const me = await requireHR();
   const sp = await searchParams;
   const status = sp.status ?? "active";
