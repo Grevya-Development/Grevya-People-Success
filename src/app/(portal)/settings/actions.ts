@@ -3,6 +3,7 @@
 import { createClient as createStatelessClient } from "@supabase/supabase-js";
 import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { clearMustChangePassword } from "@/lib/password-flag";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/lib/database.types";
@@ -42,8 +43,16 @@ export async function changePassword(_prev: ActionState, fd: FormData): Promise<
   // Revoke only the throwaway session.
   await verifier.auth.signOut({ scope: "local" });
 
-  const { error } = await supabase.auth.updateUser({ password: next, data: { must_change_password: false } });
+  const { data: updated, error } = await supabase.auth.updateUser({ password: next, data: { must_change_password: false } });
   if (error) return fail(error.message || "Could not update password");
+  if (updated.user?.app_metadata?.must_change_password === true) {
+    try {
+      await clearMustChangePassword(updated.user);
+    } catch {
+      return fail("Your password was changed, but we couldn't finish updating your account. Please try again.");
+    }
+    await supabase.auth.refreshSession();
+  }
   return ok("Password changed successfully");
 }
 

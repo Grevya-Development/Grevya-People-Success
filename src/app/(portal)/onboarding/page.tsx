@@ -50,7 +50,7 @@ export default async function MyOnboardingPage() {
             <ListChecks className="h-5 w-5 text-primary-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-slate-900">Your own onboarding</p>
-              <p className="text-xs text-slate-500">{mine.filter((t) => t.status === "pending" && t.owner === "employee").length} tasks waiting for you</p>
+              <p className="text-xs text-slate-500">{waitingText(mine.filter((t) => t.status === "pending" && t.owner === "employee").length)}</p>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </Link>
@@ -110,6 +110,10 @@ export default async function MyOnboardingPage() {
       )}
     </div>
   );
+}
+
+function waitingText(n: number) {
+  return n === 0 ? "Nothing waiting for you. HR, IT and your manager are on the rest." : `${n} task${n === 1 ? "" : "s"} waiting for you`;
 }
 
 /** HR sees everyone through RLS; on this page we still only want their own team. */

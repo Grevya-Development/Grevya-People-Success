@@ -64,7 +64,12 @@ export default async function RecruitAdminPage({ searchParams }: { searchParams:
     else if (c.stage !== "rejected") row.active++;
     perJob.set(c.job_id, row);
   }
-  const totals = [...perJob.values()].reduce((a, r) => ({ active: a.active + r.active, hired: a.hired + r.hired }), { active: 0, hired: 0 });
+  // "Active" candidates only count on open jobs — closed / on-hold pipelines aren't being worked
+  const openJobIds = new Set(allJobs.filter((j) => j.status === "open").map((j) => j.id));
+  const totals = [...perJob.entries()].reduce(
+    (a, [jobId, r]) => ({ active: a.active + (openJobIds.has(jobId) ? r.active : 0), hired: a.hired + r.hired }),
+    { active: 0, hired: 0 },
+  );
   const countBy = (s: string) => allJobs.filter((j) => j.status === s).length;
 
   return (

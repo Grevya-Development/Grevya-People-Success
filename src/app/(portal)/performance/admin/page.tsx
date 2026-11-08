@@ -77,9 +77,9 @@ export default async function PerformanceAdminPage({ searchParams }: { searchPar
   const completion = selReviews.length ? Math.round((completed / selReviews.length) * 100) : 0;
   const ratingData = [1, 2, 3, 4, 5].map((n) => ({
     label: `${n}★`,
-    value: selReviews.filter((r) => r.final_rating !== null && Math.round(Number(r.final_rating)) === n).length,
+    value: selReviews.filter((r) => r.status === "completed" && r.final_rating !== null && Math.round(Number(r.final_rating)) === n).length,
   }));
-  const rated = selReviews.filter((r) => r.final_rating !== null);
+  const rated = selReviews.filter((r) => r.status === "completed" && r.final_rating !== null);
   const avgRating = rated.length ? (rated.reduce((s, r) => s + Number(r.final_rating), 0) / rated.length).toFixed(2) : "—";
   const goalData2 = ["draft", "pending_approval", "approved", "rejected", "completed"].map((s) => ({
     label: s === "pending_approval" ? "Pending" : s === "approved" ? "In progress" : s[0].toUpperCase() + s.slice(1),

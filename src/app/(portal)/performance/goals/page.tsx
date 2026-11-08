@@ -231,7 +231,7 @@ function GoalItem({
               </ActionButton>
             </>
           )}
-          {g.status === "pending_approval" && (
+          {g.status === "pending_approval" && !cycleClosed && (
             <ActionButton action={recallGoal} fields={{ id: g.id }} confirm="Move this goal back to draft?">
               Recall
             </ActionButton>

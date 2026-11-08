@@ -39,7 +39,7 @@ export default async function TeamAttendancePage({ searchParams }: { searchParam
       .eq("status", "approved")
       .lte("start_date", date)
       .gte("end_date", date),
-    supabase.from("holidays").select("name, location_id").eq("date", date),
+    supabase.from("holidays").select("name, location_id").eq("date", date).eq("type", "public"),
   ]);
 
   const rows = team.map((e) => {

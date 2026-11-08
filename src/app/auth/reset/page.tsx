@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { Input, Label } from "@/components/ui/form";
 import { updatePassword } from "@/app/login/actions";
@@ -8,6 +10,10 @@ export const metadata = { title: "Choose a new password" };
 
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ first?: string }> }) {
   const first = (await searchParams).first === "1";
+  // Only reachable with a session: a reset link signs you in first, or HR's temporary password.
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) redirect("/login");
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">

@@ -103,7 +103,8 @@ export function PortalShell({
       <Assistant firstName={user.name.split(" ")[0]} />
 
       <main className="pt-16 transition-[padding] duration-200 lg:pl-[var(--sidebar-w)] print:p-0">
-        <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+        {/* Bottom padding keeps the last controls clear of the floating assistant button. */}
+        <div className="mx-auto w-full max-w-[1400px] px-4 pb-28 pt-6 sm:px-6 lg:px-8">{children}</div>
       </main>
     </div>
   );

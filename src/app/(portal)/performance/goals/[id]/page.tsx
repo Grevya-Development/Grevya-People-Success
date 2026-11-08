@@ -41,6 +41,8 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
     .maybeSingle();
   if (!data) notFound();
   const goal = data as unknown as Detail;
+  // Drafts stay private to their owner until submitted (same rule as My Team Goals).
+  if (goal.status === "draft" && goal.employee_id !== me.id) notFound();
 
   // Alignment chain (up to 6 levels), aligned sub-goals and the update timeline
   const chain: { id: string; title: string; employee_id: string | null }[] = [];
@@ -57,6 +59,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
       .from("goals")
       .select(`id, title, status, progress, owner:employees!employee_id(${PERSON_COLS})`)
       .eq("parent_goal_id", goal.id)
+      .neq("status", "draft")
       .order("title"),
     supabase
       .from("goal_updates")
@@ -86,7 +89,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
         title={goal.title}
         breadcrumbs={[
           { label: "Performance", href: "/performance" },
-          isOrg ? { label: "Objective Tree", href: "/performance/objective-tree" } : isOwner ? { label: "My Goals", href: "/performance/goals" } : { label: "My Team Goals", href: "/performance/team-goals" },
+          isOwner ? { label: "My Goals", href: "/performance/goals" } : isApprover ? { label: "My Team Goals", href: "/performance/team-goals" } : { label: "Objective Tree", href: "/performance/objective-tree" },
           { label: "Goal details" },
         ]}
         actions={
@@ -269,7 +272,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
                 ) : (
                   goal.status !== "draft" && goal.status !== "pending_approval" && <p className="text-xs text-slate-400">No remarks from the approver.</p>
                 )}
-                {goal.status === "pending_approval" && isApprover && (
+                {goal.status === "pending_approval" && isApprover && !closed && (
                   <div className="flex gap-2 border-t border-slate-100 pt-3">
                     <ActionButton action={decideGoal} fields={{ id: goal.id, decision: "approve" }} variant="success" prompt="Remarks (optional)" confirm="Approve this goal?">
                       Approve

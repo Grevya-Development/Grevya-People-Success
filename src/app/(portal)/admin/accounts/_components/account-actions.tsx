@@ -103,7 +103,7 @@ export function AccountActions({ employeeId, name, email, hasLogin, disabled, is
               <Unlock className="h-3.5 w-3.5" /> Enable
             </Button>
           ) : (
-            <Button size="sm" variant="outline" disabled={pending || isSelf} onClick={() => run(setLoginEnabled, { enable: "false" }, `Disable ${name}'s login? They will be signed out and unable to sign in until re-enabled.`)}>
+            <Button size="sm" variant="outline" disabled={pending || isSelf} onClick={() => run(setLoginEnabled, { enable: "false" }, `Disable ${name}'s login? They won't be able to sign in until it's re-enabled, and any open session ends within the hour.`)}>
               <Lock className="h-3.5 w-3.5" /> Disable
             </Button>
           )}
@@ -133,7 +133,7 @@ export function AccountActions({ employeeId, name, email, hasLogin, disabled, is
             >
               <Copy className="h-4 w-4" /> Copy login details
             </Button>
-            <p className="text-xs text-slate-500">Ask them to change it from Settings after signing in.</p>
+            <p className="text-xs text-slate-500">They&apos;ll be asked to choose their own password when they sign in.</p>
           </div>
         )}
       </Dialog>

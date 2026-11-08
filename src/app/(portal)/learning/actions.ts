@@ -176,9 +176,13 @@ export async function updateDueDate(_prev: ActionState, fd: FormData): Promise<A
   if (!id || !UUID_RE.test(id)) return fail("Invalid enrollment");
   const due = validDue(str(fd, "due_date"));
   if (due === false) return fail("Invalid due date");
+  if (due && due < orgToday()) return fail("Due date can't be in the past");
   const supabase = await createClient();
-  const { data: enr } = await supabase.from("course_enrollments").select("id, employee_id").eq("id", id).maybeSingle();
+  const { data: enr } = await supabase.from("course_enrollments").select("id, employee_id, status, assigned_by").eq("id", id).maybeSingle();
   if (!enr || enr.employee_id === me.id) return fail("Enrollment not found");
+  if (enr.status === "completed") return fail("This course is already completed");
+  // Managers manage only what they assigned; HR-assigned (e.g. compliance) and self-enrolled courses are left alone.
+  if (!me.isHR && enr.assigned_by !== me.id) return fail("Only whoever assigned this course (or HR) can change its due date");
   if (!me.isHR) {
     const { data: allowed } = await supabase.rpc("is_manager_of", { emp: enr.employee_id });
     if (!allowed) return fail("You don't have permission to do that.");
@@ -197,9 +201,10 @@ export async function removeEnrollment(_prev: ActionState, fd: FormData): Promis
   const id = str(fd, "enrollment_id");
   if (!id || !UUID_RE.test(id)) return fail("Invalid enrollment");
   const supabase = await createClient();
-  const { data: enr } = await supabase.from("course_enrollments").select("id, employee_id, status").eq("id", id).maybeSingle();
+  const { data: enr } = await supabase.from("course_enrollments").select("id, employee_id, status, assigned_by").eq("id", id).maybeSingle();
   if (!enr || enr.employee_id === me.id) return fail("Enrollment not found");
   if (enr.status === "completed") return fail("Completed courses can't be removed");
+  if (!me.isHR && enr.assigned_by !== me.id) return fail("Only whoever assigned this course (or HR) can remove it");
   if (!me.isHR) {
     const { data: allowed } = await supabase.rpc("is_manager_of", { emp: enr.employee_id });
     if (!allowed) return fail("You don't have permission to do that.");
@@ -318,8 +323,19 @@ export async function deleteCourse(_prev: ActionState, fd: FormData): Promise<Ac
   if ("error" in ctx) return fail(ctx.error!);
   const id = str(fd, "id");
   if (!id || !UUID_RE.test(id)) return fail("Invalid course");
-  const { error } = await ctx.supabase.from("courses").delete().eq("id", id);
+  // Deleting a course cascades to its enrollments — never wipe completion records / certificates.
+  const { count: completed, error: cErr } = await ctx.supabase
+    .from("course_enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("course_id", id)
+    .eq("status", "completed");
+  if (cErr) return fail(dbError(cErr));
+  if ((completed ?? 0) > 0) {
+    return fail(`${completed} ${completed === 1 ? "person has" : "people have"} completed this course — unpublish it instead so their certificates are kept`);
+  }
+  const { error, count } = await ctx.supabase.from("courses").delete({ count: "exact" }).eq("id", id);
   if (error) return fail(dbError(error));
+  if (!count) return fail("Course not found");
   revalidateLearning();
   return ok("Course deleted");
 }

@@ -51,7 +51,11 @@ export default async function LearningAdminPage({ searchParams }: { searchParams
 
   const [{ data: courseData }, { data: enrData }, { data: deptData }, { data: empData }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
-    supabase.from("course_enrollments").select("course_id, status, due_date"),
+    // Stats cover current employees only — an exited employee's unfinished course shouldn't stay "overdue" forever
+    supabase
+      .from("course_enrollments")
+      .select("course_id, status, due_date, employee:employees!course_enrollments_employee_id_fkey!inner(status)")
+      .neq("employee.status", "exited"),
     supabase.from("departments").select("id, name").order("name"),
     supabase.from("employees").select("department_id").neq("status", "exited"),
   ]);
@@ -266,7 +270,7 @@ export default async function LearningAdminPage({ searchParams }: { searchParams
                           fields={{ id: c.id }}
                           variant="ghost"
                           title="Delete"
-                          confirm={s.enrolled ? `Delete "${c.title}"? ${s.enrolled} enrollment(s) will also be removed.` : `Delete "${c.title}"?`}
+                          confirm={s.enrolled ? `Delete "${c.title}"? ${s.enrolled} enrollment(s) will also be removed. Courses someone has completed can't be deleted — unpublish them instead.` : `Delete "${c.title}"?`}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-red-500" />
                         </ActionButton>

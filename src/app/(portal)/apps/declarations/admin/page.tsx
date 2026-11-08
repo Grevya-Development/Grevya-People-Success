@@ -13,11 +13,29 @@ export const metadata = { title: "Declaration Forms" };
 export default async function DeclarationAdminPage() {
   await requireHR();
   const supabase = await createClient();
-  const [{ data: forms }, { count: headcount }] = await Promise.all([
+  // Response rate is measured against active employees, so only count their responses.
+  // Read in pages: a single request returns at most 1,000 rows.
+  const activeResponses = async () => {
+    const rows: { form_id: string }[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data } = await supabase
+        .from("declaration_responses")
+        .select("form_id, employee:employees!declaration_responses_employee_id_fkey!inner(status)")
+        .neq("employee.status", "exited")
+        .order("id")
+        .range(from, from + 999);
+      rows.push(...(data ?? []));
+      if (!data || data.length < 1000) return rows;
+    }
+  };
+  const [{ data: forms }, { count: headcount }, responses] = await Promise.all([
     supabase.from("declaration_forms").select("id, title, due_date, active, fields, created_at, declaration_responses(count)").order("created_at", { ascending: false }),
     supabase.from("employees").select("id", { count: "exact", head: true }).neq("status", "exited"),
+    activeResponses(),
   ]);
   const total = headcount ?? 0;
+  const activeByForm = new Map<string, number>();
+  for (const r of responses) activeByForm.set(r.form_id, (activeByForm.get(r.form_id) ?? 0) + 1);
   const today = orgToday();
 
   const newBtn = (
@@ -52,7 +70,7 @@ export default async function DeclarationAdminPage() {
             <TBody>
               {forms.map((f) => {
                 const responses = f.declaration_responses?.[0]?.count ?? 0;
-                const pct = total ? Math.round((responses / total) * 100) : 0;
+                const pct = total ? Math.min(100, Math.round(((activeByForm.get(f.id) ?? 0) / total) * 100)) : 0;
                 const closed = !!f.due_date && today > f.due_date;
                 return (
                   <TR key={f.id}>

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui/form";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { assignGoal, createGoal, updateGoal } from "../actions";
 import { IntentSubmit } from "./intent-submit";
 import { GOAL_CATEGORIES, PHASE_LABEL } from "./shared";
@@ -47,7 +47,8 @@ export function GoalForm({
   members?: GoalFormMember[];
   defaults?: GoalFormDefaults;
 }) {
-  const [cycleId, setCycleId] = useState(defaults.cycle_id ?? cycles[0]?.id ?? "");
+  // Only preselect a cycle that is actually offered (e.g. not a closed one picked on the page behind the dialog)
+  const [cycleId, setCycleId] = useState((cycles.some((c) => c.id === defaults.cycle_id) ? defaults.cycle_id : cycles[0]?.id) ?? "");
   const [memberId, setMemberId] = useState(mode === "assign" ? "" : (ownerId ?? ""));
   const [weightage, setWeightage] = useState<string>(defaults.weightage ? String(defaults.weightage) : "");
 
@@ -142,8 +143,15 @@ export function GoalForm({
             ))}
           </Select>
         </Field>
-        <Field label="Due date" hint={cycle ? `Cycle runs ${cycle.start_date} → ${cycle.end_date}` : undefined}>
-          <Input name="due_date" type="date" min={cycle?.start_date} defaultValue={defaults.due_date ?? cycle?.end_date ?? ""} />
+        <Field label="Due date" hint={cycle ? `Cycle runs ${formatDate(cycle.start_date)} → ${formatDate(cycle.end_date)}` : undefined}>
+          <Input
+            key={cycleId}
+            name="due_date"
+            type="date"
+            min={cycle?.start_date}
+            max={cycle?.end_date}
+            defaultValue={(defaults.cycle_id === cycleId ? defaults.due_date : null) ?? cycle?.end_date ?? ""}
+          />
         </Field>
       </FormGrid>
 

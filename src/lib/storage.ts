@@ -68,7 +68,9 @@ export async function uploadDocument(file: FormDataEntryValue | null, folder: st
  * RLS-protected select), because it uses the service role.
  */
 export async function signedDocumentUrl(path: string | null | undefined, expiresIn = 600): Promise<string | null> {
-  if (!path) return null;
+  // The storage API normalises "a/../b" into "b", so a path a user wrote into their own row
+  // could otherwise point at anyone's file. Only sign plain, relative object paths.
+  if (!path || /(^|\/)\.\.?(\/|$)|[\\%?#]|^\/|[\u0000-\u001f\u007f]/.test(path)) return null;
   const admin = createAdminClient();
   const { data } = await admin.storage.from("documents").createSignedUrl(path, expiresIn);
   return data?.signedUrl ?? null;
@@ -78,7 +80,8 @@ export async function signedDocumentUrl(path: string | null | undefined, expires
 export async function uploadAvatar(file: FormDataEntryValue | null): Promise<string | null> {
   if (!file || typeof file === "string" || file.size === 0) return null;
   if (file.size > 2 * 1024 * 1024) throw new Error("Image must be under 2 MB");
-  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file");
+  // Matches the avatars bucket's allowed types (no SVG: the bucket is public).
+  if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) throw new Error("Please choose a JPG, PNG, WebP or GIF image");
   await assertReadable(file);
   const supabase = await createClient();
   const {

@@ -26,9 +26,11 @@ export async function setTaskStatus(_prev: ActionState, fd: FormData): Promise<A
   const status = str(fd, "status");
   if (!id || !UUID.test(id)) return fail("Invalid task");
   if (status !== "done" && status !== "pending" && status !== "skipped") return fail("Invalid status");
+  const remarks = str(fd, "remarks");
+  if (remarks && remarks.length > 500) return fail("Keep the note under 500 characters");
   const supabase = await createClient();
   const { data: task } = await supabase.from("onboarding_tasks").select("employee_id").eq("id", id).maybeSingle();
-  const { error } = await supabase.rpc("set_onboarding_task", { p_task: id, p_status: status, p_note: str(fd, "remarks") ?? undefined });
+  const { error } = await supabase.rpc("set_onboarding_task", { p_task: id, p_status: status, p_note: remarks ?? undefined });
   if (error) return fail(dbError(error));
   refresh(task?.employee_id);
   return ok(status === "done" ? "Marked as done" : status === "skipped" ? "Task skipped" : "Task reopened");

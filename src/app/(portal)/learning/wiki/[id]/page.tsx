@@ -89,7 +89,7 @@ export default async function WikiArticlePage({ params }: { params: Promise<{ id
                 {a.status === "submitted" && "Awaiting HR review — not visible to others yet."}
                 {a.status === "rejected" && "HR asked for changes before publishing."}
               </p>
-              {a.review_remarks && <p className="mt-1 text-xs">Remarks: {a.review_remarks}</p>}
+              {a.status === "rejected" && a.review_remarks && <p className="mt-1 text-xs">Remarks: {a.review_remarks}</p>}
             </div>
           </div>
           {me.isHR && a.status === "submitted" && (

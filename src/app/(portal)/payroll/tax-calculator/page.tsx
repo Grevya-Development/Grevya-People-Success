@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { financialYear, orgToday } from "@/lib/utils";
 import { TaxCalculator, type TaxCalcDefaults } from "../_components/tax-calculator";
-import { annualEpf, annualGross, parseInvestmentItems, toNum } from "../_lib/payroll";
+import { INVESTMENT_ITEMS, annualEpf, annualGross, parseInvestmentItems, toNum } from "../_lib/payroll";
 
 export const metadata = { title: "Tax Calculator" };
 
@@ -18,7 +18,9 @@ export default async function TaxCalculatorPage() {
   ]);
 
   const items = parseInvestmentItems(inv?.items);
-  const sum = (section: string) => items.filter((i) => i.section === section).reduce((a, i) => a + i.declared, 0);
+  // Same per-item caps as payroll TDS (e.g. 80D self and parents are capped separately).
+  const cap = (code: string) => INVESTMENT_ITEMS.find((d) => d.code === code)?.cap ?? Infinity;
+  const sum = (section: string) => items.filter((i) => i.section === section).reduce((a, i) => a + Math.min(i.declared, cap(i.code)), 0);
   const hraItem = items.find((i) => i.code === "hra");
 
   const defaults: TaxCalcDefaults = {

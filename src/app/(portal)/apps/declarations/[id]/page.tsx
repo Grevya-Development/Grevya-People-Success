@@ -1,3 +1,4 @@
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { differenceInCalendarDays, parseISO } from "date-fns";
@@ -55,7 +56,7 @@ export default async function DeclarationFormPage({ params }: { params: Promise<
               ? `Closed on ${formatDate(form.due_date)}`
               : daysLeft === 0
                 ? "Due today"
-                : `Due ${formatDate(form.due_date)} (${daysLeft} days left)`
+                : `Due ${formatDate(form.due_date)} (${daysLeft} ${daysLeft === 1 ? "day" : "days"} left)`
             : "No due date"}
         </InfoPill>
         {response ? (
@@ -89,7 +90,7 @@ export default async function DeclarationFormPage({ params }: { params: Promise<
           ) : response ? (
             <DeclarationAnswers fields={fields} values={values} />
           ) : (
-            <EmptyState icon={Lock} title="You didn't submit this declaration" description="The form is closed. Raise an HR Helpdesk ticket if you still need to declare something." />
+            <EmptyState icon={Lock} title="You didn't submit this declaration" description={`The form is closed. Raise ${SERVICE_DESK_URL ? "a Service Desk request" : "an HR Helpdesk ticket"} if you still need to declare something.`} />
           )}
         </CardBody>
       </Card>

@@ -55,7 +55,7 @@ async function candidateAccess(supabase: Supabase, me: CurrentEmployee, candidat
   if (!candidateId) return { candidate: null, canManage: false };
   const { data: candidate } = await supabase
     .from("candidates")
-    .select("id, job_id, stage, full_name, job:job_openings!candidates_job_id_fkey(hiring_manager_id)")
+    .select("id, job_id, stage, full_name, job:job_openings!candidates_job_id_fkey(hiring_manager_id, status)")
     .eq("id", candidateId)
     .maybeSingle();
   if (!candidate) return { candidate: null, canManage: false };
@@ -347,6 +347,7 @@ export async function scheduleInterview(_prev: ActionState, fd: FormData): Promi
   if (!candidate) return fail("Candidate not found");
   if (!canManage) return fail("You can only schedule interviews for jobs you manage");
   if (candidate.stage === "hired" || candidate.stage === "rejected") return fail(`Candidate is already ${candidate.stage}`);
+  if (candidate.job?.status !== "open") return fail("This job isn't open — reopen it before scheduling interviews");
 
   const { data: interviewer } = await supabase.from("employees").select("id, status").eq("id", interviewer_id).maybeSingle();
   if (!interviewer || interviewer.status === "exited") return fail("Choose an active employee as interviewer");

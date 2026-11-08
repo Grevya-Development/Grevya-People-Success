@@ -37,6 +37,7 @@ export default async function EditDeclarationFormPage({ params, searchParams }: 
   const rows = responses ?? [];
   const responded = new Set(rows.map((r) => r.employee_id));
   const pending = (employees ?? []).filter((e) => !responded.has(e.id));
+  const activeResponded = (employees?.length ?? 0) - pending.length;
   const showResponses = tab === "responses";
   const base = `/apps/declarations/admin/${id}`;
 
@@ -82,7 +83,7 @@ export default async function EditDeclarationFormPage({ params, searchParams }: 
             <StatCard label="Yet to respond" value={pending.length} icon={Users} tone="bg-amber-50 text-amber-600" />
             <StatCard
               label="Response rate"
-              value={`${employees?.length ? Math.round((rows.length / employees.length) * 100) : 0}%`}
+              value={`${employees?.length ? Math.round((activeResponded / employees.length) * 100) : 0}%`}
               hint={`of ${employees?.length ?? 0} active employees`}
             />
           </div>

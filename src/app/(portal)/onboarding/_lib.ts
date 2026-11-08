@@ -56,7 +56,8 @@ export function taskActionHref(autoKey: string | null, employeeId: string, opts:
     case "login":
       return opts.isHR ? { href: `/hris/employees/${employeeId}/edit`, label: "Create login" } : null;
     case "bank_details":
-      return opts.self ? { href: "/profile", label: "Open my profile" } : opts.isHR ? { href: `/profile?id=${employeeId}`, label: "Open profile" } : null;
+      // The PAN / bank form lives on the personal details page.
+      return opts.self ? { href: "/profile/personal", label: "Add bank details" } : opts.isHR ? { href: `/profile/personal?id=${employeeId}`, label: "Open profile" } : null;
     case "policies":
       return { href: "/hris/policies", label: opts.self ? "Read policies" : "Policies" };
     case "goals":

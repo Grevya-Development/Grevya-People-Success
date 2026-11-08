@@ -10,6 +10,7 @@ import { Avatar, Card, CardBody, CardHeader, ProgressRing, WidgetCard, EmptyStat
 import { PunchCard } from "../attendance/_components/punch-card";
 import { AttendanceWidget, type DayRow } from "./_components/attendance-widget";
 import { OnboardingBanner } from "./_components/onboarding-banner";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 
 export const metadata = { title: "Home" };
 
@@ -57,7 +58,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const recByDate = new Map((records.data ?? []).map((r) => [r.date, r]));
   const holidaySet = new Set<string>();
   {
-    const { data: pastHolidays } = await supabase.from("holidays").select("date").gte("date", from).lte("date", today);
+    const { data: pastHolidays } = await supabase.from("holidays").select("date").eq("type", "public").gte("date", from).lte("date", today);
     pastHolidays?.forEach((h) => holidaySet.add(h.date));
   }
   const leaveDates = new Set<string>();
@@ -112,7 +113,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     { label: "Leave requests pending", count: pLeave.count ?? 0, href: "/leave/details" },
     { label: "Regularizations pending", count: pReg.count ?? 0, href: "/attendance/regularization" },
     { label: "Claims in progress", count: pClaims.count ?? 0, href: "/reimbursement/claims" },
-    { label: "Open helpdesk tickets", count: pTickets.count ?? 0, href: "/apps/helpdesk" },
+    // Old HR Helpdesk tickets were copied into the Service Desk, so they'd never close here.
+    ...(SERVICE_DESK_URL ? [] : [{ label: "Open helpdesk tickets", count: pTickets.count ?? 0, href: "/apps/helpdesk" }]),
     { label: "Self review due", count: pReview.count ?? 0, href: "/performance/reviews" },
   ];
 

@@ -7,6 +7,7 @@ import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { str, num, bool, orgToday } from "@/lib/utils";
 import { addDays, computeLeaveDays, diffDays, fmtNum, isISODate } from "./_lib/dates";
 import { getHolidays } from "./_lib/data";
+import { proratedQuota } from "@/lib/leave-proration";
 
 const MAX_BACKDATE_DAYS = 30;
 const MAX_LEAVE_SPAN = 90;
@@ -52,7 +53,8 @@ export async function applyLeave(_prev: ActionState, fd: FormData): Promise<Acti
     if (session !== "first" && session !== "second") return fail("Choose the half-day session");
   }
 
-  const holidays = await getHolidays(supabase, start, end, me.location_id);
+  // Optional (restricted) holidays are working days unless taken, so only public holidays are free.
+  const holidays = (await getHolidays(supabase, start, end, me.location_id)).filter((h) => h.type === "public");
   const calc = computeLeaveDays(start, end, holidays, halfDay);
   if (calc.days <= 0) return fail("The selected dates fall on weekends or holidays — no working days to apply for");
 
@@ -280,10 +282,33 @@ export async function allocateBalances(_prev: ActionState, fd: FormData): Promis
   const quotaTypes = (types ?? []).filter((t) => Number(t.annual_quota) > 0);
   if (!quotaTypes.length) return fail("No active leave types with an annual quota to allocate");
 
-  const { data: emps } = await ctx.supabase.from("employees").select("id").neq("status", "exited");
+  // Employees joining after this year get nothing yet; mid-year joiners are prorated (same rule as onboarding).
+  const { data: emps } = await ctx.supabase.from("employees").select("id, date_of_joining").neq("status", "exited").lte("date_of_joining", `${year}-12-31`);
   if (!emps?.length) return fail("No active employees found");
 
-  const rows = emps.flatMap((e) => quotaTypes.map((t) => ({ employee_id: e.id, leave_type_id: t.id, year, allocated: Number(t.annual_quota) })));
+  // Never allocate less than someone has already used (the database rejects that, failing the whole batch).
+  const used = new Map<string, number>();
+  if (mode === "overwrite") {
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error } = await ctx.supabase
+        .from("leave_balances")
+        .select("employee_id, leave_type_id, used")
+        .eq("year", year)
+        .in("leave_type_id", quotaTypes.map((t) => t.id))
+        .range(from, from + 999);
+      if (error) return fail(dbError(error));
+      for (const b of page ?? []) used.set(`${b.employee_id}:${b.leave_type_id}`, Number(b.used) || 0);
+      if (!page || page.length < 1000) break;
+    }
+  }
+  const rows = emps.flatMap((e) =>
+    quotaTypes.map((t) => ({
+      employee_id: e.id,
+      leave_type_id: t.id,
+      year,
+      allocated: Math.max(proratedQuota(Number(t.annual_quota), e.date_of_joining, year), used.get(`${e.id}:${t.id}`) ?? 0),
+    })),
+  );
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await ctx.supabase
       .from("leave_balances")
@@ -304,6 +329,14 @@ export async function adjustBalance(_prev: ActionState, fd: FormData): Promise<A
   if (!employeeId || !typeId) return fail("Choose an employee and leave type");
   if (!year || year < 2000 || year > 2100) return fail("Choose a valid year");
   if (allocated === null || allocated < 0 || allocated > 365 || (allocated * 2) % 1 !== 0) return fail("Allocation must be between 0 and 365 in steps of 0.5");
+  const { data: current } = await ctx.supabase
+    .from("leave_balances")
+    .select("used")
+    .eq("employee_id", employeeId)
+    .eq("leave_type_id", typeId)
+    .eq("year", year)
+    .maybeSingle();
+  if (current && allocated < Number(current.used)) return fail(`Allocation can't be less than the ${fmtNum(Number(current.used))} day(s) already taken`);
   const { error } = await ctx.supabase
     .from("leave_balances")
     .upsert({ employee_id: employeeId, leave_type_id: typeId, year, allocated }, { onConflict: "employee_id,leave_type_id,year" });

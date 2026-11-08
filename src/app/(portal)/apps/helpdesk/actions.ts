@@ -5,7 +5,11 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { str } from "@/lib/utils";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 import { HR_ROLES, isCategory, isPriority, isStatus, ticketRef } from "./_lib/constants";
+
+/** The legacy HR Helpdesk is read-only once the Service Desk is enabled (its pages redirect there). */
+const MOVED = "The HR Helpdesk has moved to the Service Desk — please raise or update requests there.";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -18,6 +22,7 @@ function revalidateTicket(id?: string) {
 
 /** Load a ticket the signed-in user can see (RLS) and work out their role on it. */
 async function loadTicket(id: string | null) {
+  if (SERVICE_DESK_URL) return { error: MOVED } as const;
   const me = await getCurrentEmployee();
   if (!me) return { error: "Not signed in" } as const;
   if (!id || !UUID.test(id)) return { error: "Ticket not found" } as const;
@@ -34,6 +39,7 @@ async function loadTicket(id: string | null) {
 }
 
 export async function raiseTicket(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  if (SERVICE_DESK_URL) return fail(MOVED);
   const me = await getCurrentEmployee();
   if (!me) return fail("Not signed in");
   const category = str(fd, "category");

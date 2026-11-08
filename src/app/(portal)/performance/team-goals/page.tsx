@@ -46,7 +46,9 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
       parentOwnerIds: [...new Set(team.map((t) => t.manager_id).filter((x): x is string => !!x))],
     }),
   ]);
-  const pending = (pendingRes.data ?? []) as unknown as TeamGoal[];
+  // Goals left pending in a closed cycle can no longer be actioned
+  const closedIds = new Set(((cycleData ?? []) as Cycle[]).filter((c) => c.status === "closed").map((c) => c.id));
+  const pending = ((pendingRes.data ?? []) as unknown as TeamGoal[]).filter((g) => !g.cycle_id || !closedIds.has(g.cycle_id));
   const cycleGoals = (cycleRes.data ?? []) as unknown as TeamGoal[];
   const byPerson = new Map<string, TeamGoal[]>();
   for (const g of cycleGoals) byPerson.set(g.employee_id!, [...(byPerson.get(g.employee_id!) ?? []), g]);

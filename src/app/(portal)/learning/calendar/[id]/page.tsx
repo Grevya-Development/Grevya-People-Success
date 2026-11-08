@@ -66,7 +66,11 @@ export default async function TrainingSessionPage({ params }: { params: Promise<
                 title="Edit session"
                 size="lg"
               >
-                <SessionForm session={s} courses={courseData ?? []} />
+                <SessionForm
+                  session={s}
+                  // keep the linked course selectable even if it has since been unpublished, so saving doesn't unlink it
+                  courses={s.course && !(courseData ?? []).some((c) => c.id === s.course!.id) ? [...(courseData ?? []), s.course] : (courseData ?? [])}
+                />
               </Dialog>
               {!ended && (
                 <ActionButton action={cancelTrainingSession} fields={{ id: s.id }} variant="danger" size="md" confirm={`Cancel "${s.title}"? ${taken} registered employee(s) will be notified.`}>
@@ -109,7 +113,9 @@ export default async function TrainingSessionPage({ params }: { params: Promise<
             {s.description && <p className="whitespace-pre-line border-t border-slate-100 pt-4 text-sm text-slate-600">{s.description}</p>}
             {s.mode === "virtual" && s.meeting_link && (
               <div className="border-t border-slate-100 pt-4">
-                {myReg || me.isHR ? (
+                {cancelled ? (
+                  <p className="text-sm text-slate-500">The meeting link is no longer available — this session was cancelled.</p>
+                ) : myReg || me.isHR ? (
                   <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 break-all text-sm font-medium text-primary-600 hover:underline">
                     <ExternalLink className="h-4 w-4 shrink-0" /> Join meeting
                   </a>

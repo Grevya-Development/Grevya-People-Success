@@ -37,7 +37,9 @@ export async function getAttendanceDays(
     getApprovedLeaves(supabase, emp.id, from, to),
     getHolidays(supabase, from, to, emp.location_id),
   ]);
-  const days = buildDays({ start: from, end: to, today, records: records ?? [], leaves, holidays, shift, joinedOn: emp.date_of_joining });
+  // Optional holidays are working days (payroll counts them too), so only public holidays mark a day off.
+  const daysOff = holidays.filter((h) => h.type === "public");
+  const days = buildDays({ start: from, end: to, today, records: records ?? [], leaves, holidays: daysOff, shift, joinedOn: emp.date_of_joining });
   return { shift, days, holidays };
 }
 

@@ -8,6 +8,7 @@ import { LinkTabs } from "@/components/ui/link-tabs";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { formatDate, orgToday } from "@/lib/utils";
+import { deskRequestUrl } from "@/lib/service-desk";
 import { startOnboarding } from "../../onboarding/actions";
 import { daysBetween } from "../../onboarding/_lib";
 
@@ -263,8 +264,8 @@ export default async function HROnboardingPage({ searchParams }: { searchParams:
                       )}
                       <TD>
                         {r.it?.link_label ? (
-                          r.it.link ? (
-                            <a href={r.it.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:underline">
+                          deskRequestUrl(r.it.link, r.it.link_label) ? (
+                            <a href={deskRequestUrl(r.it.link, r.it.link_label)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:underline">
                               {r.it.link_label}
                               {r.it.status === "done" && <Badge tone="green">Done</Badge>}
                             </a>

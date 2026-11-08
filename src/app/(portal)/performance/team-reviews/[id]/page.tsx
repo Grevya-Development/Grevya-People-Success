@@ -66,6 +66,8 @@ export default async function TeamReviewPage({ params }: { params: Promise<{ id:
   const closed = r.cycle?.status === "closed";
   const canEdit = r.status !== "completed" && (!closed || me.isHR);
   const selfSubmitted = r.status !== "pending_self";
+  // Once a cycle is closed the employee can no longer submit, so HR may finalise without a self-assessment.
+  const canComplete = selfSubmitted || (closed && me.isHR);
 
   return (
     <div>
@@ -148,10 +150,11 @@ export default async function TeamReviewPage({ params }: { params: Promise<{ id:
                     <IntentSubmit
                       options={[
                         { value: "save", label: "Save draft", variant: "outline" },
-                        { value: "complete", label: "Complete review", variant: "success", disabled: !selfSubmitted },
+                        { value: "complete", label: "Complete review", variant: "success", disabled: !canComplete },
                       ]}
                     />
-                    {!selfSubmitted && <p className="mt-2 text-right text-xs text-slate-500">You can complete the review after the self-assessment is submitted.</p>}
+                    {!canComplete && <p className="mt-2 text-right text-xs text-slate-500">You can complete the review after the self-assessment is submitted.</p>}
+                    {!selfSubmitted && canComplete && <p className="mt-2 text-right text-xs text-slate-500">The cycle is closed without a self-assessment — you can still complete this review as HR.</p>}
                   </div>
                 </ResultForm>
               </CardBody>

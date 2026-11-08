@@ -90,7 +90,7 @@ export function JobForm({
             name="referral_bonus"
             type="number"
             min={0}
-            step={500}
+            step="any"
             defaultValue={job?.referral_bonus ?? 0}
             disabled={!isHR}
           />

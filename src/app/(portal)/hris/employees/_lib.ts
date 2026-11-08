@@ -63,6 +63,7 @@ export type CreateSummary = {
   onboardingTasks?: number;
   itRequest?: { label: string; url: string | null } | null;
   probationEnd?: string | null;
+  hasManager?: boolean;
 };
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -84,7 +84,7 @@ async function MyContracts({ me }: { me: CurrentEmployee }) {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
             {expiring.length === 1 ? "One of your contracts ends" : `${expiring.length} of your contracts end`} within the next 30 days. HR will reach out about
-            renewal — or raise a request on the HR Helpdesk.
+            renewal — or raise a request with HR.
           </p>
         </div>
       )}

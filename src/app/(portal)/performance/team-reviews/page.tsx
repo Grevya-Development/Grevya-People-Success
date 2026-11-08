@@ -154,7 +154,14 @@ export default async function TeamReviewsPage({ searchParams }: { searchParams: 
                       </TD>
                       <TD>
                         <span className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Stars value={r.self_rating} /> <span className="text-xs text-slate-500">{fmtRating(r.self_rating)}</span>
+                          {/* A saved-but-unsubmitted self rating stays private to the employee */}
+                          {r.status === "pending_self" ? (
+                            <span className="text-xs text-slate-400">—</span>
+                          ) : (
+                            <>
+                              <Stars value={r.self_rating} /> <span className="text-xs text-slate-500">{fmtRating(r.self_rating)}</span>
+                            </>
+                          )}
                         </span>
                       </TD>
                       <TD className="text-sm">{fmtRating(r.manager_rating)}</TD>

@@ -86,7 +86,7 @@ export default async function LearningPathPage({ params }: { params: Promise<{ i
             {assigned && <Badge tone="teal">Assigned by HR</Badge>}
             {myPath?.due_date && (
               <p className={cn("text-xs", due !== null && due < 0 && prog.pct < 100 ? "font-medium text-red-600" : "text-slate-600")}>
-                {prog.pct < 100 ? dueLabel(due) : "Due"} · {formatDate(myPath.due_date)}
+                {prog.pct < 100 ? `${dueLabel(due)} · ${formatDate(myPath.due_date)}` : `Completed · was due ${formatDate(myPath.due_date)}`}
               </p>
             )}
           </div>

@@ -212,7 +212,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
             )}
           </Card>
 
-          {!closed && (
+          {!closed && c.job?.status === "open" && (
             <Card className="overflow-hidden">
               <div className={cn("flex items-center gap-2 px-5 py-3", recruitTheme.pill)}>
                 <CalendarClock className={cn("h-4 w-4", recruitTheme.text)} />

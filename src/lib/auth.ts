@@ -21,6 +21,16 @@ export type CurrentEmployee = Tables<"employees"> & {
   isSuperAdmin: boolean;
 };
 
+/**
+ * Whether HR has disabled this person's login (Admin → Accounts). Tokens are verified locally, so a
+ * disabled user's token keeps working until it expires; this check stops them on the next request.
+ */
+const loginDisabled = cache(async (): Promise<boolean> => {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("auth_login_disabled");
+  return data === true;
+});
+
 /** Signed-in employee for this request (deduplicated per request). */
 export const getCurrentEmployee = cache(async (): Promise<CurrentEmployee | null> => {
   const supabase = await createClient();
@@ -30,26 +40,32 @@ export const getCurrentEmployee = cache(async (): Promise<CurrentEmployee | null
   if (!userId) return null;
 
   // One query: the employee, their manager, and a count of their (non-exited) direct reports.
-  const { data } = await supabase
-    .from("employees")
-    .select(
-      "*, department:departments(name), designation:designations(title), location:locations(name), manager:manager_id(id, full_name, avatar_url), reports:employees!manager_id(count)",
-    )
-    .eq("user_id", userId)
-    .neq("reports.status", "exited")
-    .maybeSingle();
-  if (!data) return null;
+  const [{ data }, disabled] = await Promise.all([
+    supabase
+      .from("employees")
+      .select(
+        "*, department:departments(name), designation:designations(title), location:locations(name), manager:manager_id(id, full_name, avatar_url), reports:employees!manager_id(count)",
+      )
+      .eq("user_id", userId)
+      .neq("reports.status", "exited")
+      .maybeSingle(),
+    loginDisabled(),
+  ]);
+  if (!data || disabled) return null;
 
   const { reports, ...emp } = data as typeof data & { reports: { count: number }[] | null };
   const reportCount = reports?.[0]?.count ?? 0;
-  const isSuperAdmin = emp.role === "super_admin";
-  const isHR = isSuperAdmin || emp.role === "hr_admin";
+  // Someone who has left keeps employee-level access (payslips, letters) but no admin or manager powers,
+  // matching is_hr() / is_manager_of() in the database.
+  const exited = emp.status === "exited";
+  const isSuperAdmin = !exited && emp.role === "super_admin";
+  const isHR = isSuperAdmin || (!exited && emp.role === "hr_admin");
   return {
     ...(emp as unknown as CurrentEmployee),
     reportCount,
     isHR,
     isSuperAdmin,
-    isManager: isHR || emp.role === "manager" || reportCount > 0,
+    isManager: isHR || (!exited && (emp.role === "manager" || reportCount > 0)),
   };
 });
 
@@ -59,7 +75,7 @@ export async function requireEmployee(): Promise<CurrentEmployee> {
   if (!me) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
-    redirect(data?.claims?.sub ? "/no-access" : "/login");
+    redirect(!data?.claims?.sub ? "/login" : (await loginDisabled()) ? "/no-access?disabled=1" : "/no-access");
   }
   return me;
 }

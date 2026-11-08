@@ -5,7 +5,7 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { uploadDocument } from "@/lib/storage";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
-import { num, str } from "@/lib/utils";
+import { num, orgToday, str } from "@/lib/utils";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -96,6 +96,7 @@ export async function completeExternalTraining(_prev: ActionState, fd: FormData)
   const { data: t } = await supabase.from("external_trainings").select("id, employee_id, status, start_date, certificate_path").eq("id", id).maybeSingle();
   if (!t || t.employee_id !== me.id) return fail("Request not found");
   if (t.status !== "approved" && t.status !== "completed") return fail("Only approved trainings can be completed");
+  if (t.status === "approved" && t.start_date > orgToday()) return fail("You can mark this training completed once it has started");
 
   let path: string | null = null;
   try {

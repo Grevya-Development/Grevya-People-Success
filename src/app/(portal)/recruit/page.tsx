@@ -91,6 +91,8 @@ export default async function RecruitHomePage() {
   );
 
   const pendingFeedback = interviews.filter((i) => i.result === "pending");
+  // Feedback is only "due" once the interview has started (upcoming ones are listed but not counted)
+  const feedbackDue = pendingFeedback.filter((i) => isPast(i.scheduled_at)).length;
   const completedInterviews = interviews.filter((i) => i.result !== "pending").reverse();
   const hired = referrals.filter((r) => r.stage === "hired");
   const bonusEarned = hired.reduce((s, r) => s + Number(r.job?.referral_bonus ?? 0), 0);
@@ -126,7 +128,7 @@ export default async function RecruitHomePage() {
           tone="bg-emerald-50 text-emerald-600"
           hint={bonusEarned > 0 ? `${formatCurrency(bonusEarned)} bonus` : "No bonus yet"}
         />
-        <StatCard label="Feedback due" value={pendingFeedback.length} icon={CalendarClock} tone="bg-amber-50 text-amber-600" hint="Interviews assigned to you" />
+        <StatCard label="Feedback due" value={feedbackDue} icon={CalendarClock} tone="bg-amber-50 text-amber-600" hint="Interviews assigned to you" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

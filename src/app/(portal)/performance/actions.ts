@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentEmployee, type CurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
-import { str, num } from "@/lib/utils";
+import { str, num, formatDate } from "@/lib/utils";
 import { GOAL_CATEGORIES, EDITABLE_STATUSES, WEIGHTED_STATUSES, isPhase } from "./_components/shared";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -68,7 +68,7 @@ async function parseGoalFields(
   if (description && description.length > 4000) return { error: "Description is too long" };
   if (!category || !GOAL_CATEGORIES.some((c) => c.value === category)) return { error: "Choose a category" };
   if (weightage === null) return { error: "Weightage is required" };
-  if (weightage <= 0 || weightage > 100) return { error: "Weightage must be between 1 and 100" };
+  if (weightage < 1 || weightage > 100) return { error: "Weightage must be between 1 and 100" };
   if (Math.round(weightage * 100) !== weightage * 100) return { error: "Weightage can have at most 2 decimals" };
   if (target && target.length > 1000) return { error: "Target / KPI is too long" };
   if (dueDate && !isDate(dueDate)) return { error: "Invalid due date" };
@@ -80,6 +80,7 @@ async function parseGoalFields(
   if (cycle.status === "closed") return { error: "This review cycle is closed" };
   if (cycle.status === "draft" && !me.isHR) return { error: "This review cycle has not opened yet" };
   if (dueDate && dueDate < cycle.start_date) return { error: "Due date cannot be before the cycle starts" };
+  if (dueDate && dueDate > cycle.end_date) return { error: `Due date must be within the review cycle (it ends ${formatDate(cycle.end_date)})` };
 
   if (parentId) {
     if (parentId === excludeGoalId) return { error: "A goal cannot be aligned to itself" };
@@ -112,6 +113,13 @@ async function parseGoalFields(
       parent_goal_id: parentId,
     },
   };
+}
+
+/** True when the goal belongs to a closed review cycle (no further workflow allowed). */
+async function cycleClosed(supabase: Supabase, cycleId: string | null) {
+  if (!cycleId) return false;
+  const { data } = await supabase.from("review_cycles").select("status").eq("id", cycleId).maybeSingle();
+  return data?.status === "closed";
 }
 
 async function loadOwnGoal(supabase: Supabase, me: CurrentEmployee, goalId: string | null) {
@@ -178,7 +186,7 @@ export async function deleteGoal(_prev: ActionState, fd: FormData): Promise<Acti
   if (error) return fail(dbError(error));
   if (!data?.length) return fail("Goal could not be deleted");
   revalidatePerformance();
-  return ok("Goal deleted", str(fd, "redirect") === "list" ? "/performance/goals" : undefined);
+  return ok("Goal deleted", str(fd, "redirect") === "list" ? `/performance/goals${goal.cycle_id ? `?cycle=${goal.cycle_id}` : ""}` : undefined);
 }
 
 export async function submitGoal(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -222,6 +230,7 @@ export async function recallGoal(_prev: ActionState, fd: FormData): Promise<Acti
   const goal = await loadOwnGoal(supabase, me, id(fd));
   if (!goal) return fail("Goal not found");
   if (goal.status !== "pending_approval") return fail("Only goals awaiting approval can be recalled");
+  if (await cycleClosed(supabase, goal.cycle_id)) return fail("This review cycle is closed");
   const { data, error } = await supabase.from("goals").update({ status: "draft" }).eq("id", goal.id).eq("status", "pending_approval").select("id");
   if (error) return fail(dbError(error));
   if (!data?.length) return fail("This goal has already been actioned");
@@ -241,6 +250,7 @@ export async function updateProgress(_prev: ActionState, fd: FormData): Promise<
   const goal = await loadOwnGoal(supabase, me, id(fd));
   if (!goal) return fail("Goal not found");
   if (goal.status !== "approved") return fail("Progress can only be updated on approved goals");
+  if (await cycleClosed(supabase, goal.cycle_id)) return fail("This review cycle is closed");
 
   const { error: upErr } = await supabase.from("goal_updates").insert({ goal_id: goal.id, author_id: me.id, progress, comment });
   if (upErr) return fail(dbError(upErr));
@@ -259,6 +269,7 @@ export async function completeGoal(_prev: ActionState, fd: FormData): Promise<Ac
   const goal = await loadOwnGoal(supabase, me, id(fd));
   if (!goal) return fail("Goal not found");
   if (goal.status !== "approved") return fail("Only approved goals can be marked completed");
+  if (await cycleClosed(supabase, goal.cycle_id)) return fail("This review cycle is closed");
 
   const { data, error } = await supabase.from("goals").update({ status: "completed", progress: 100 }).eq("id", goal.id).eq("status", "approved").select("id");
   if (error) return fail(dbError(error));
@@ -276,7 +287,7 @@ export async function addGoalComment(_prev: ActionState, fd: FormData): Promise<
   const me = await getCurrentEmployee();
   if (!me) return fail("Not signed in");
   const comment = str(fd, "comment") ?? str(fd, "remarks");
-  if (!comment || comment.length < 2) return fail("Write a comment");
+  if (!comment) return fail("Write a comment");
   if (comment.length > 2000) return fail("Comment is too long");
   const goalId = id(fd);
   if (!goalId) return fail("Goal not found");
@@ -300,15 +311,16 @@ export async function decideGoal(_prev: ActionState, fd: FormData): Promise<Acti
   const decision = str(fd, "decision");
   const remarks = str(fd, "remarks");
   if (decision !== "approve" && decision !== "reject") return fail("Invalid decision");
-  if (decision === "reject" && (!remarks || remarks.length < 3)) return fail("Add remarks explaining the rejection");
+  if (decision === "reject" && !remarks) return fail("Add remarks explaining the rejection");
   if (remarks && remarks.length > 2000) return fail("Remarks are too long");
   const goalId = id(fd);
   if (!goalId) return fail("Goal not found");
 
   const supabase = await createClient();
-  const { data: goal } = await supabase.from("goals").select("id, employee_id, status").eq("id", goalId).maybeSingle();
+  const { data: goal } = await supabase.from("goals").select("id, employee_id, status, cycle_id").eq("id", goalId).maybeSingle();
   if (!goal || !goal.employee_id) return fail("Goal not found");
   if (goal.employee_id === me.id) return fail("You cannot approve your own goal");
+  if (await cycleClosed(supabase, goal.cycle_id)) return fail("This review cycle is closed");
   const { data: allowed } = await supabase.rpc("can_approve_for", { emp: goal.employee_id });
   if (!allowed) return fail("You can only action goals of your team");
   if (goal.status !== "pending_approval") return fail("This goal is no longer awaiting approval");
@@ -519,9 +531,12 @@ export async function saveManagerReview(_prev: ActionState, fd: FormData): Promi
   const { data: allowed } = await supabase.rpc("can_approve_for", { emp: review.employee_id });
   if (!allowed) return fail("You can only review your team");
   if (review.status === "completed") return fail("This review is already completed");
-  if (complete && review.status !== "pending_manager") return fail("The employee has not submitted their self-assessment yet");
   const cycleStatus = (review.cycle as { status: string } | null)?.status;
   if (cycleStatus === "closed" && !me.isHR) return fail("This review cycle is closed");
+  // In a closed cycle the employee can't submit any more, so HR may finalise without a self-assessment.
+  if (complete && review.status !== "pending_manager" && !(cycleStatus === "closed" && me.isHR)) {
+    return fail("The employee has not submitted their self-assessment yet");
+  }
 
   const { data, error } = await supabase
     .from("reviews")
@@ -545,6 +560,15 @@ export async function saveManagerReview(_prev: ActionState, fd: FormData): Promi
 // Review cycles (HR)
 // ---------------------------------------------------------------------------
 
+/** A cycle that already has goals or reviews can't go back to draft (employees would lose sight of them). */
+async function blockDraftWithData(supabase: Supabase, cycleId: string) {
+  const [{ count: reviews }, { count: goals }] = await Promise.all([
+    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("cycle_id", cycleId),
+    supabase.from("goals").select("id", { count: "exact", head: true }).eq("cycle_id", cycleId).not("employee_id", "is", null),
+  ]);
+  return (reviews ?? 0) > 0 || (goals ?? 0) > 0;
+}
+
 export async function saveCycle(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const me = await getCurrentEmployee();
   if (!me) return fail("Not signed in");
@@ -564,6 +588,13 @@ export async function saveCycle(_prev: ActionState, fd: FormData): Promise<Actio
   const supabase = await createClient();
   const { data: dups } = await supabase.from("review_cycles").select("id").ilike("name", name.replace(/[\\%_]/g, "\\$&"));
   if ((dups ?? []).some((d) => d.id !== cycleId)) return fail("A cycle with this name already exists");
+
+  if (cycleId && status === "draft") {
+    const { data: cur } = await supabase.from("review_cycles").select("status").eq("id", cycleId).maybeSingle();
+    if (cur && cur.status !== "draft" && (await blockDraftWithData(supabase, cycleId))) {
+      return fail("This cycle already has goals or reviews — it can't go back to draft");
+    }
+  }
 
   if (cycleId) {
     const { data, error } = await supabase.from("review_cycles").update({ name, start_date: start, end_date: end, status }).eq("id", cycleId).select("id");
@@ -586,6 +617,9 @@ export async function setCyclePhase(_prev: ActionState, fd: FormData): Promise<A
   if (!cycleId) return fail("Cycle not found");
   if (!isPhase(status)) return fail("Invalid phase");
   const supabase = await createClient();
+  if (status === "draft" && (await blockDraftWithData(supabase, cycleId))) {
+    return fail("This cycle already has goals or reviews — it can't go back to draft");
+  }
   const { data, error } = await supabase.from("review_cycles").update({ status }).eq("id", cycleId).select("name");
   if (error) return fail(dbError(error));
   if (!data?.length) return fail("Cycle not found");
@@ -602,7 +636,7 @@ export async function deleteCycle(_prev: ActionState, fd: FormData): Promise<Act
   const supabase = await createClient();
   const [{ count: reviews }, { count: goals }] = await Promise.all([
     supabase.from("reviews").select("id", { count: "exact", head: true }).eq("cycle_id", cycleId),
-    supabase.from("goals").select("id", { count: "exact", head: true }).eq("cycle_id", cycleId),
+    supabase.from("goals").select("id", { count: "exact", head: true }).eq("cycle_id", cycleId).not("employee_id", "is", null),
   ]);
   if ((reviews ?? 0) > 0 || (goals ?? 0) > 0) return fail("This cycle already has goals or reviews — close it instead of deleting");
   const { data, error } = await supabase.from("review_cycles").delete().eq("id", cycleId).select("id");

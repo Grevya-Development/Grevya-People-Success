@@ -71,6 +71,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"assistant_usage": {
+                  Row: {
+                    "created_at": string,"employee_id": string,"id": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"employee_id": string,"id"?: never
+                  }
+                  Update: {
+                    "created_at"?: string,"employee_id"?: string,"id"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "assistant_usage_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"attendance_records": {
                   Row: {
                     "check_in": string | null,"check_out": string | null,"created_at": string,"date": string,"employee_id": string,"id": string,"notes": string | null,"source": string,"status": string,"work_mode": string
@@ -1452,8 +1472,14 @@ isOneToOne: false
               "assigned": number,"skipped": number
             }[]
                            },
+"assistant_take_slot":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "auth_employee_id":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"auth_login_disabled":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "auth_role":
 { Args: Record<PropertyKey, never>; Returns: string
@@ -1472,6 +1498,9 @@ isOneToOne: false
               "attempts": number,"body": string,"created_at": string,"email": string,"employee_id": string,"full_name": string,"id": string,"link": string,"title": string
             }[]
                            },
+"current_fy_label":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "is_above_me":
 { Args: { "emp": string }; Returns: boolean
                            },
@@ -1487,11 +1516,17 @@ isOneToOne: false
 "is_super_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"leave_working_days":
+{ Args: { "p_emp": string,"p_end": string,"p_half"?: boolean,"p_start": string }; Returns: number
+                           },
 "notify":
 { Args: { "emp": string,"p_body": string,"p_link": string,"p_title": string }; Returns: undefined
                            },
 "onboarding_condition":
 { Args: { "p_employee": string,"p_key": string }; Returns: boolean
+                           },
+"onboarding_due_date":
+{ Args: { "p_basis": string,"p_joining": string,"p_offset": number,"p_probation_end": string }; Returns: string
                            },
 "org_today":
 { Args: Record<PropertyKey, never>; Returns: string
@@ -1501,6 +1536,9 @@ isOneToOne: false
                            },
 "refresh_onboarding":
 { Args: { "p_employee": string }; Returns: undefined
+                           },
+"revoke_user_sessions":
+{ Args: { "p_user": string }; Returns: undefined
                            },
 "send_probation_reminders":
 { Args: Record<PropertyKey, never>; Returns: number

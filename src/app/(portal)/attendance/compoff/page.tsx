@@ -33,7 +33,7 @@ export default async function CompoffPage() {
   ]);
   const balance = compType ? (await getBalances(supabase, me.id, year, [compType]))[0] : null;
 
-  const holidayMap = new Map(holidays.map((h) => [h.date, h.name]));
+  const holidayMap = new Map(holidays.filter((h) => h.type === "public").map((h) => [h.date, h.name]));
   const claimed = new Set((rows ?? []).filter((r) => r.status === "pending" || r.status === "approved").map((r) => r.worked_date));
   const eligible = (worked ?? []).filter((w) => w.check_in && (isWeekend(w.date) || holidayMap.has(w.date)) && !claimed.has(w.date));
 
@@ -60,7 +60,7 @@ export default async function CompoffPage() {
             <CardBody>
               <ActionForm action={applyCompoff} successMessage="Comp-off requested">
                 <div className="space-y-4">
-                  <Field label="Date worked" htmlFor="worked_date" required hint="Must be a weekend or holiday in the last 60 days">
+                  <Field label="Date worked" htmlFor="worked_date" required hint="Must be a weekend or public holiday in the last 60 days">
                     <Input id="worked_date" name="worked_date" type="date" min={minDate} max={today} required />
                   </Field>
                   <Field label="Days" htmlFor="days" required>

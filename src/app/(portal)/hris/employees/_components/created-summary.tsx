@@ -24,8 +24,13 @@ export function CreatedSummary({ result, onAddAnother }: { result: NonNullable<E
   }
   steps.push({
     ok: (s.onboardingTasks ?? 0) > 0 ? true : null,
-    label: (s.onboardingTasks ?? 0) > 0 ? `Onboarding checklist with ${s.onboardingTasks} tasks` : "No onboarding checklist (joining date is more than 30 days ago)",
-    detail: (s.onboardingTasks ?? 0) > 0 ? "The manager has been notified about their tasks." : "You can start one from HR Admin → Onboarding.",
+    label: (s.onboardingTasks ?? 0) > 0 ? `Onboarding checklist with ${s.onboardingTasks} tasks` : "No onboarding checklist",
+    detail:
+      (s.onboardingTasks ?? 0) > 0
+        ? s.hasManager
+          ? "The manager has been notified about their tasks."
+          : "No reporting manager yet. Whoever you set as their manager will see the manager tasks."
+        : "Checklists start on their own for active joiners whose joining date is within the last 30 days or ahead. You can start one from HR Admin → Onboarding.",
   });
   if ((s.onboardingTasks ?? 0) > 0) {
     steps.push(

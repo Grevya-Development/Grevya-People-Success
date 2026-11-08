@@ -55,7 +55,7 @@ export default async function TrainingCalendarPage({ searchParams }: { searchPar
   const myRegs = (myRegData ?? []).filter((r) => r.session);
   const mine = new Set(myRegs.map((r) => r.session!.id));
   const myUpcoming = myRegs.filter((r) => r.session!.ends_at >= nowIso && r.session!.status === "scheduled").sort((a, b) => a.session!.starts_at.localeCompare(b.session!.starts_at));
-  const myPast = myRegs.filter((r) => r.session!.ends_at < nowIso).sort((a, b) => b.session!.starts_at.localeCompare(a.session!.starts_at)).slice(0, 5);
+  const myPast = myRegs.filter((r) => r.session!.ends_at < nowIso && r.session!.status !== "cancelled").sort((a, b) => b.session!.starts_at.localeCompare(a.session!.starts_at)).slice(0, 5);
   const upcoming = upcomingData ?? [];
 
   const byDay = new Map<string, NonNullable<typeof monthData>>();

@@ -55,14 +55,14 @@ export async function createLogin(_prev: AccountResult, fd: FormData): Promise<A
   const password = str(fd, "password") ?? tempPassword();
   if (password.length < 8) return fail("Password must be at least 8 characters");
 
-  const { data, error } = await admin.auth.admin.createUser({ email: emp.email, password, email_confirm: true, user_metadata: { must_change_password: true } });
+  const { data, error } = await admin.auth.admin.createUser({ email: emp.email, password, email_confirm: true, user_metadata: { must_change_password: true }, app_metadata: { must_change_password: true } });
   let userId = data?.user?.id;
   if (error) {
     if (!/already/i.test(error.message)) return fail(error.message);
     // An auth user with this email exists — find it, reset its password and link it.
     const found = await findAuthUserByEmail(admin, emp.email);
     if (!found) return fail(error.message);
-    const upd = await admin.auth.admin.updateUserById(found, { password, ban_duration: "none", user_metadata: { must_change_password: true } });
+    const upd = await admin.auth.admin.updateUserById(found, { password, ban_duration: "none", user_metadata: { must_change_password: true }, app_metadata: { must_change_password: true } });
     if (upd.error) return fail(upd.error.message);
     userId = found;
   }
@@ -88,7 +88,7 @@ export async function resetPassword(_prev: AccountResult, fd: FormData): Promise
   if (!emp.user_id) return fail("This employee doesn't have a login yet");
   const password = str(fd, "password") ?? tempPassword();
   if (password.length < 8) return fail("Password must be at least 8 characters");
-  const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, user_metadata: { must_change_password: true } });
+  const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, user_metadata: { must_change_password: true }, app_metadata: { must_change_password: true } });
   if (error) return fail(error.message);
   return done(`Password reset for ${emp.full_name}`, { password, email: emp.email });
 }
@@ -103,7 +103,12 @@ export async function setLoginEnabled(_prev: AccountResult, fd: FormData): Promi
   if (!enable && emp.role === "super_admin" && (await superAdminCount(admin)) <= 1) return fail("You can't disable the last Super Admin");
   const { error } = await admin.auth.admin.updateUserById(emp.user_id, { ban_duration: enable ? "none" : BAN_FOREVER });
   if (error) return fail(error.message);
-  return done(enable ? `Login enabled for ${emp.full_name}` : `Login disabled for ${emp.full_name} — they can no longer sign in`);
+  if (!enable) {
+    // End their sessions too, so they're signed out everywhere rather than at their next token refresh.
+    const { error: revokeError } = await admin.rpc("revoke_user_sessions", { p_user: emp.user_id });
+    if (revokeError) console.error("Accounts: couldn't end sessions after disabling a login", revokeError.message);
+  }
+  return done(enable ? `Login enabled for ${emp.full_name}` : `Login disabled for ${emp.full_name} — they're signed out and can no longer sign in`);
 }
 
 export async function removeLogin(_prev: AccountResult, fd: FormData): Promise<AccountResult> {

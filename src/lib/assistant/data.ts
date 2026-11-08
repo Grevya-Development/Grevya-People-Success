@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CurrentEmployee } from "@/lib/auth";
 import { allLeaves } from "@/lib/nav";
 import { formatCurrency, formatDate, orgToday } from "@/lib/utils";
+import { SERVICE_DESK_URL } from "@/lib/service-desk";
 
 /**
  * Read-only lookups for the assistant. Every query runs with the signed-in
@@ -90,7 +91,8 @@ export async function pendingItems(supabase: Client, me: CurrentEmployee) {
     { item: "Leave requests awaiting approval", count: leave.count ?? 0, link: "/leave/details" },
     { item: "Regularizations awaiting approval", count: reg.count ?? 0, link: "/attendance/regularization" },
     { item: "Claims in progress", count: claims.count ?? 0, link: "/reimbursement/claims" },
-    { item: "Open helpdesk tickets", count: tickets.count ?? 0, link: "/apps/helpdesk" },
+    // Old HR Helpdesk tickets were copied into the Service Desk, so they'd never close here.
+    ...(SERVICE_DESK_URL ? [] : [{ item: "Open helpdesk tickets", count: tickets.count ?? 0, link: "/apps/helpdesk" }]),
     { item: "Self review to complete", count: review.count ?? 0, link: "/performance/reviews" },
   ];
   if (me.isManager) {

@@ -83,7 +83,9 @@ export function pickCycle(cycles: Cycle[], requested: string | string[] | undefi
 }
 
 export function weightageTotal(goals: Pick<Goal, "status" | "weightage">[]) {
-  return goals.filter((g) => WEIGHTED_STATUSES.includes(g.status)).reduce((s, g) => s + Number(g.weightage || 0), 0);
+  // Sum in hundredths so 2-decimal weightages add up to exactly 100 (no float drift like 99.99999999999999).
+  const hundredths = goals.filter((g) => WEIGHTED_STATUSES.includes(g.status)).reduce((s, g) => s + Math.round(Number(g.weightage || 0) * 100), 0);
+  return hundredths / 100;
 }
 
 /** Weighted average progress (falls back to a plain average when weightage is 0). */

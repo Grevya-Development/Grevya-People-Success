@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { dbError } from "@/lib/actions";
 import { addMonths, format, parseISO } from "date-fns";
 import { str, bool, orgToday, normalizeMobile, MOBILE_HINT } from "@/lib/utils";
+import { deskRequestUrl } from "@/lib/service-desk";
 import { firstLeaveYear, proratedQuota, remainingMonths } from "@/lib/leave-proration";
 import { sendWelcomeEmail } from "@/lib/email/welcome";
 import { EMPLOYMENT_TYPES, GENDERS, PROBATION_MONTHS, ROLES, STATUSES, UUID_RE, isAdminRole, type EmployeeResult, type CreateSummary } from "./_lib";
@@ -189,7 +190,7 @@ async function provisionLogin(employeeId: string, email: string, password: strin
 
   // A temporary password: the person is asked to choose their own on first sign-in.
   if (emp.user_id) {
-    const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, email, email_confirm: true, user_metadata: { must_change_password: true } });
+    const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, email, email_confirm: true, user_metadata: { must_change_password: true }, app_metadata: { must_change_password: true } });
     return error ? error.message : null;
   }
 
@@ -199,6 +200,7 @@ async function provisionLogin(employeeId: string, email: string, password: strin
     password,
     email_confirm: true,
     user_metadata: { full_name: fullName, must_change_password: true },
+    app_metadata: { must_change_password: true },
   });
   if (created?.user) {
     userId = created.user.id;
@@ -208,7 +210,7 @@ async function provisionLogin(employeeId: string, email: string, password: strin
     if (!existing) return createErr?.message ?? "Could not create the login";
     const { data: other } = await admin.from("employees").select("id, full_name").eq("user_id", existing.id).maybeSingle();
     if (other && other.id !== employeeId) return `A login with this email is already linked to ${other.full_name}`;
-    const { error } = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true, user_metadata: { must_change_password: true } });
+    const { error } = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true, user_metadata: { must_change_password: true }, app_metadata: { must_change_password: true } });
     if (error) return error.message;
     userId = existing.id;
   }
@@ -245,6 +247,10 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
     password = pw.password;
   }
 
+  const personalEmail = str(fd, "personal_email")?.toLowerCase() ?? null;
+  if (personalEmail && (!EMAIL_RE.test(personalEmail) || personalEmail.length > 120)) return failure("Enter a valid personal email, or leave it blank");
+  if (personalEmail && personalEmail === data.email) return failure("The personal email is the same as the work email. Leave it blank instead.");
+
   const supabase = await createClient();
   const mgrErr = await checkManager(supabase, null, data.manager_id);
   if (mgrErr) return failure(mgrErr);
@@ -256,10 +262,7 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
   }
 
   const warnings: string[] = [];
-  const personalEmail = str(fd, "personal_email")?.toLowerCase() ?? null;
-  const { error: privErr } = await supabase
-    .from("employee_private")
-    .insert({ employee_id: row.id, personal_email: personalEmail && EMAIL_RE.test(personalEmail) ? personalEmail : null });
+  const { error: privErr } = await supabase.from("employee_private").insert({ employee_id: row.id, personal_email: personalEmail });
   if (privErr) warnings.push("private record: " + dbError(privErr));
 
   // Leave for the first year, prorated from the joining date.
@@ -290,7 +293,7 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
   if (login && bool(fd, "send_welcome")) {
     const extra = await joinerContext(row.id);
     summary.welcome = await sendWelcomeEmail({
-      to: personalEmail && EMAIL_RE.test(personalEmail) ? personalEmail : data.email,
+      to: personalEmail ?? data.email,
       name: row.full_name ?? data.first_name,
       loginEmail: login.email,
       password: login.password,
@@ -304,8 +307,9 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
   const { data: tasks } = await supabase.from("onboarding_tasks").select("auto_key, link, link_label").eq("employee_id", row.id);
   summary.onboardingTasks = tasks?.length ?? 0;
   const it = tasks?.find((t) => t.auto_key === "it_setup");
-  summary.itRequest = it?.link_label ? { label: it.link_label, url: it.link } : null;
+  summary.itRequest = it?.link_label ? { label: it.link_label, url: deskRequestUrl(it.link, it.link_label) } : null;
   summary.probationEnd = data.probation_end_date;
+  summary.hasManager = !!data.manager_id;
 
   revalidateEmployees(row.id);
   revalidatePath("/hris/onboarding");

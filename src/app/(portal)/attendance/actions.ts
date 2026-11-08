@@ -170,8 +170,8 @@ export async function applyCompoff(_prev: ActionState, fd: FormData): Promise<Ac
 
   const supabase = await createClient();
   if (!isWeekend(date)) {
-    const hol = await getHolidays(supabase, date, date, me.location_id);
-    if (!hol.length) return fail("Comp-off can only be claimed for work on a weekend or holiday");
+    const hol = (await getHolidays(supabase, date, date, me.location_id)).filter((h) => h.type === "public");
+    if (!hol.length) return fail("Comp-off can only be claimed for work on a weekend or public holiday");
   }
   const { data: dup } = await supabase
     .from("compoff_requests")

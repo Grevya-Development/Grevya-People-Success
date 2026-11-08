@@ -49,7 +49,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
 
       <div className="no-print mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link href={mine ? "/learning/certificates" : "/learning/team"} className={buttonClass("ghost")}>
-          <ArrowLeft className="h-4 w-4" /> {mine ? "My Certificates" : "Team Learning"}
+          <ArrowLeft className="h-4 w-4" /> {mine ? "My Certificates" : "My Team Courses"}
         </Link>
         <PrintButton />
       </div>

@@ -309,7 +309,7 @@ export default async function TeamLearningPage({ searchParams }: { searchParams:
                               <Link href={`/learning/certificates/${e.id}`} className={buttonClass("ghost", "sm")}>
                                 <Award className="h-3.5 w-3.5" /> Certificate
                               </Link>
-                            ) : (
+                            ) : me.isHR || e.assigned_by === me.id ? (
                               <>
                                 <Dialog
                                   trigger={
@@ -324,7 +324,7 @@ export default async function TeamLearningPage({ searchParams }: { searchParams:
                                   <ActionForm action={updateDueDate} className="space-y-4">
                                     <input type="hidden" name="enrollment_id" value={e.id} />
                                     <Field label="Due date" hint="Leave empty to remove the due date">
-                                      <Input type="date" name="due_date" defaultValue={e.due_date ?? ""} />
+                                      <Input type="date" name="due_date" min={today} defaultValue={e.due_date ?? ""} />
                                     </Field>
                                     <div className="flex justify-end">
                                       <SubmitButton>Save</SubmitButton>
@@ -341,6 +341,8 @@ export default async function TeamLearningPage({ searchParams }: { searchParams:
                                   <Trash2 className="h-3.5 w-3.5 text-red-500" />
                                 </ActionButton>
                               </>
+                            ) : (
+                              <span className="text-xs text-slate-400" title="Only whoever assigned this course (or HR) can change it">—</span>
                             )}
                           </div>
                         </TD>

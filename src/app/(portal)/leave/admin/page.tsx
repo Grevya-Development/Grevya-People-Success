@@ -244,7 +244,7 @@ async function BalancesTab({ year, q, thisYear }: { year: number; q: string; thi
               <Field label="Mode">
                 <Select name="mode" defaultValue="missing">
                   <option value="missing">Only employees without an allocation</option>
-                  <option value="overwrite">Reset allocation to quota for everyone</option>
+                  <option value="overwrite">Reset allocation to quota for everyone (prorated for joiners)</option>
                 </Select>
               </Field>
               <SubmitButton>Allocate</SubmitButton>

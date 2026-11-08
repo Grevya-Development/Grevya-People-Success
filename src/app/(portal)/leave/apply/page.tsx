@@ -53,10 +53,10 @@ export default async function ApplyLeavePage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="overflow-hidden">
           <div className="h-1.5 bg-[#ec7a35]" />
-          <CardHeader title="Leave request" description="Weekends and holidays inside the range are not counted." />
+          <CardHeader title="Leave request" description="Weekends and public holidays inside the range are not counted. Optional holidays count as leave days." />
           <CardBody>
             {applyTypes.length ? (
-              <ApplyLeaveForm types={applyTypes} holidays={holidays.map((h) => ({ date: h.date, name: h.name }))} today={today} minDate={addDays(today, -30)} />
+              <ApplyLeaveForm types={applyTypes} holidays={holidays.filter((h) => h.type === "public").map((h) => ({ date: h.date, name: h.name }))} today={today} minDate={addDays(today, -30)} />
             ) : (
               <EmptyState icon={Umbrella} title="No leave types configured" description="HR hasn't set up any leave types yet. Please check back later." />
             )}

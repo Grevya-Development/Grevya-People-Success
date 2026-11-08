@@ -5,6 +5,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { Dialog } from "@/components/ui/dialog";
 import { cn, formatDate } from "@/lib/utils";
+import { deskRequestUrl } from "@/lib/service-desk";
 import { addTask, deleteTask, setTaskDue, setTaskStatus } from "../actions";
 import { AUTO_LABELS, OWNERS, OWNER_LABELS, daysBetween, taskActionHref, type Owner, type TaskRow } from "../_lib";
 
@@ -104,14 +105,17 @@ export function Checklist({
 }
 
 function TaskItem({ task: t, viewer, employeeId, today }: { task: TaskRow; viewer: Viewer; employeeId: string; today: string }) {
-  const tickable = canTick(t.owner, viewer);
   const pending = t.status === "pending";
+  // Automatic tasks tick themselves off when the real thing happens; only HR can override by hand.
+  const tickable = canTick(t.owner, viewer) && (viewer.isHR || (!t.auto_key && t.status !== "skipped"));
   const due = pending ? dueText(t.due_date, today) : null;
   const go = pending ? taskActionHref(t.auto_key, employeeId, { isHR: viewer.isHR, self: viewer.isJoiner }) : null;
   const isDeskTask = t.auto_key === "it_setup";
+  const canRecheck = pending && !!t.auto_key && !isDeskTask && !viewer.isHR && canTick(t.owner, viewer);
+  const link = isDeskTask ? deskRequestUrl(t.link, t.link_label) : t.link;
 
   return (
-    <li className="flex items-start gap-3 px-5 py-3.5">
+    <li className="flex flex-wrap items-start gap-x-3 gap-y-2 px-5 py-3.5 sm:flex-nowrap">
       <div className="pt-0.5">
         {tickable && !(isDeskTask && pending && t.link_label && !viewer.isHR) ? (
           <ActionButton
@@ -134,7 +138,7 @@ function TaskItem({ task: t, viewer, employeeId, today }: { task: TaskRow; viewe
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-[calc(100%-2.75rem)] sm:basis-auto">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className={cn("text-sm font-medium", pending ? "text-slate-900" : "text-slate-500 line-through decoration-slate-300")}>{t.title}</p>
           {t.status === "skipped" && <Badge>Skipped</Badge>}
@@ -161,8 +165,8 @@ function TaskItem({ task: t, viewer, employeeId, today }: { task: TaskRow; viewe
             </span>
           )}
           {t.note && <span className="text-slate-500">{t.note}</span>}
-          {t.link && (
-            <a href={t.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-primary-600 hover:underline">
+          {link && (
+            <a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-primary-600 hover:underline">
               {t.link_label ?? "Open"}
               <ExternalLink className="h-3 w-3" />
             </a>
@@ -170,11 +174,18 @@ function TaskItem({ task: t, viewer, employeeId, today }: { task: TaskRow; viewe
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
+      {/* On phones the actions drop under the text so the title keeps the full width. */}
+      <div className="flex shrink-0 items-center gap-1 empty:hidden max-sm:w-full max-sm:pl-8">
         {go && (
           <Link href={go.href} className={buttonClass("outline", "sm")}>
             {go.label}
           </Link>
+        )}
+        {/* Automatic tasks normally tick themselves off; this re-checks one whose change fired nothing. */}
+        {canRecheck && (
+          <ActionButton action={setTaskStatus} fields={{ id: t.id, status: "done" }} variant="ghost" size="sm" successMessage="Done" title="Check whether this is done now">
+            Check again
+          </ActionButton>
         )}
         {viewer.isHR && pending && (
           <>

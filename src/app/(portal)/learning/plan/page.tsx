@@ -6,6 +6,7 @@ import { Avatar, Badge, Card, CardHeader, EmptyState, PageHeader, StatCard, Stat
 import { cn, formatDate, orgToday } from "@/lib/utils";
 import { CourseProgress } from "../_components/progress";
 import { daysUntil, dueLabel } from "../_lib/course";
+import { istDate } from "../_lib/time";
 
 export const metadata = { title: "My Learning Plan" };
 
@@ -36,7 +37,7 @@ export default async function LearningPlanPage() {
   const done = rows.filter((e) => e.status === "completed").sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
   const overdue = pending.filter((e) => e.days !== null && e.days < 0).length;
   const dueThisMonth = pending.filter((e) => e.days !== null && e.days >= 0 && e.days <= 30).length;
-  const onTime = done.filter((e) => !e.due_date || (e.completed_at ?? "").slice(0, 10) <= e.due_date).length;
+  const onTime = done.filter((e) => !e.due_date || (e.completed_at ? istDate(e.completed_at) : "") <= e.due_date).length;
 
   const renderRow = (e: (typeof rows)[number]) => {
     const isOverdue = e.days !== null && e.days < 0;
