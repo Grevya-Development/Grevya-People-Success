@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, ShieldCheck, ShieldOff, UserRound, Users } from "lucide-react";
+import { ExternalLink, ListChecks, ShieldCheck, ShieldOff, UserRound, Users } from "lucide-react";
 import { requireHR } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Avatar, Badge, Card, CardBody, CardHeader, PageHeader, StatusBadge } from "@/components/ui";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, orgToday } from "@/lib/utils";
 import { EmployeeForm } from "../../_components/employee-form";
 import { LoginPanel } from "../../_components/login-panel";
 import { loadFormOptions } from "../../_data";
@@ -22,15 +22,21 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
   const supabase = await createClient();
   const { data: emp } = await supabase
     .from("employees")
-    .select("*, designation:designations(title), department:departments(name)")
+    .select("*, designation:designations(title), department:departments(name), private:employee_private(personal_email)")
     .eq("id", id)
     .maybeSingle();
   if (!emp) notFound();
 
-  const [options, reports] = await Promise.all([
+  const [options, reports, onboarding] = await Promise.all([
     loadFormOptions(emp.id),
     supabase.from("employees").select("id", { count: "exact", head: true }).eq("manager_id", emp.id).neq("status", "exited"),
+    supabase.from("onboarding_tasks").select("status").eq("employee_id", emp.id),
   ]);
+  const tasks = onboarding.data ?? [];
+  const tasksDone = tasks.filter((t) => t.status !== "pending").length;
+  const priv = emp.private as unknown as { personal_email: string | null } | { personal_email: string | null }[] | null;
+  const personalEmail = (Array.isArray(priv) ? priv[0] : priv)?.personal_email ?? null;
+  const loginEmailTo = !emp.user_id && personalEmail ? personalEmail : emp.email;
 
   let authInfo: { email: string | null; lastSignIn: string | null } | null = null;
   if (emp.user_id) {
@@ -72,6 +78,8 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
               role: emp.role,
               status: emp.status,
               employment_type: emp.employment_type,
+              probation_end_date: emp.probation_end_date,
+              confirmation_date: emp.confirmation_date,
             }}
           />
         </div>
@@ -100,6 +108,16 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
                   <dt className="text-slate-500">Direct reports</dt>
                   <dd className="font-medium text-slate-800">{reports.count ?? 0}</dd>
                 </div>
+                <div className="col-span-2 rounded-lg bg-slate-50 px-3 py-2">
+                  <dt className="text-slate-500">Probation</dt>
+                  <dd className="font-medium text-slate-800">
+                    {emp.confirmation_date
+                      ? `Confirmed on ${formatDate(emp.confirmation_date)}`
+                      : emp.probation_end_date
+                        ? `${emp.probation_end_date < orgToday() ? "Ended" : "Until"} ${formatDate(emp.probation_end_date)} · not yet confirmed`
+                        : "No probation"}
+                  </dd>
+                </div>
               </dl>
             </CardBody>
           </Card>
@@ -127,7 +145,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
                   </div>
                 </div>
               )}
-              <LoginPanel employeeId={emp.id} hasLogin={!!emp.user_id} disabled={emp.status === "exited" || adminLocked} />
+              <LoginPanel employeeId={emp.id} hasLogin={!!emp.user_id} disabled={emp.status === "exited" || adminLocked} emailTo={loginEmailTo} />
               {emp.status === "exited" && <p className="text-xs text-slate-500">Logins can&apos;t be issued to exited employees.</p>}
               {adminLocked && emp.status !== "exited" && <p className="text-xs text-slate-500">Only a Super Admin can manage an admin&apos;s login.</p>}
             </CardBody>
@@ -135,6 +153,11 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
 
           <Card>
             <CardBody className="space-y-1 py-3">
+              <Link href={`/onboarding/${emp.id}`} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <ListChecks className="h-4 w-4 text-[#3753b8]" />
+                {tasks.length ? `Onboarding checklist (${tasksDone}/${tasks.length} done)` : "Onboarding checklist (not started)"}
+                <ExternalLink className="ml-auto h-3.5 w-3.5 text-slate-400" />
+              </Link>
               <Link href={`/profile?id=${emp.id}`} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 <UserRound className="h-4 w-4 text-[#3753b8]" />
                 Full profile (personal, bank, education)

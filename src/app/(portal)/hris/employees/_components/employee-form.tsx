@@ -4,12 +4,24 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button, buttonClass, Card, CardBody, CardHeader, Checkbox, Field, FormGrid, Input, Select } from "@/components/ui";
 import { humanize, MOBILE_HINT, MOBILE_PATTERN } from "@/lib/utils";
 import { createEmployee, updateEmployee } from "../actions";
-import { EMPLOYMENT_TYPES, GENDERS, ROLES, ROLE_LABELS, STATUSES, isAdminRole, type EmployeeFormValues, type EmployeeResult, type Option } from "../_lib";
-import { PasswordReveal } from "./password-reveal";
+import {
+  EMPLOYMENT_TYPES,
+  GENDERS,
+  PROBATION_MONTHS,
+  ROLES,
+  ROLE_LABELS,
+  STATUSES,
+  defaultProbationMonths,
+  isAdminRole,
+  type EmployeeFormValues,
+  type EmployeeResult,
+  type Option,
+} from "../_lib";
+import { CreatedSummary } from "./created-summary";
 
 type Options = { departments: Option[]; designations: Option[]; locations: Option[]; managers: Option[] };
 
@@ -30,6 +42,8 @@ export function EmployeeForm({
   const [created, setCreated] = useState<EmployeeResult>(null);
   const [formKey, setFormKey] = useState(0);
   const [wantsLogin, setWantsLogin] = useState(true);
+  const [probation, setProbation] = useState(String(defaultProbationMonths(values.employment_type)));
+  const [probationTouched, setProbationTouched] = useState(false);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,42 +58,24 @@ export function EmployeeForm({
       if (res.warning) toast.warning(res.warning, { duration: 10000 });
       if (mode === "edit") {
         router.refresh();
-      } else if (res.login) {
-        setCreated(res);
       } else {
-        router.push(`/hris/employees/${res.employeeId}/edit`);
+        setCreated(res);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
   };
 
-  if (created?.ok && created.login) {
+  if (created?.ok) {
     return (
-      <Card className="mx-auto max-w-2xl">
-        <CardBody className="space-y-5 py-6">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">{created.message}</h2>
-              <p className="mt-0.5 text-sm text-slate-500">The employee record, leave balances and login have been created.</p>
-            </div>
-          </div>
-          <PasswordReveal email={created.login.email} password={created.login.password} />
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCreated(null);
-                setFormKey((k) => k + 1);
-              }}
-            >
-              Add another
-            </Button>
-            <Link href={`/hris/employees/${created.employeeId}/edit`} className={buttonClass("primary")}>
-              Open employee
-            </Link>
-          </div>
-        </CardBody>
-      </Card>
+      <CreatedSummary
+        result={created}
+        onAddAnother={() => {
+          setCreated(null);
+          setProbationTouched(false);
+          setProbation(String(defaultProbationMonths(values.employment_type)));
+          setFormKey((k) => k + 1);
+        }}
+      />
     );
   }
 
@@ -120,6 +116,11 @@ export function EmployeeForm({
             <Field label="Date of birth" htmlFor="date_of_birth">
               <Input id="date_of_birth" name="date_of_birth" type="date" defaultValue={v.date_of_birth ?? ""} />
             </Field>
+            {mode === "create" && (
+              <Field label="Personal email" htmlFor="personal_email" hint="Optional. The welcome email goes here if their work mailbox isn't ready yet.">
+                <Input id="personal_email" name="personal_email" type="email" maxLength={120} />
+              </Field>
+            )}
           </FormGrid>
         </CardBody>
       </Card>
@@ -132,7 +133,14 @@ export function EmployeeForm({
               <Input id="date_of_joining" name="date_of_joining" type="date" defaultValue={v.date_of_joining} required />
             </Field>
             <Field label="Employment type" htmlFor="employment_type" required>
-              <Select id="employment_type" name="employment_type" defaultValue={v.employment_type}>
+              <Select
+                id="employment_type"
+                name="employment_type"
+                defaultValue={v.employment_type}
+                onChange={(e) => {
+                  if (mode === "create" && !probationTouched) setProbation(String(defaultProbationMonths(e.target.value)));
+                }}
+              >
                 {EMPLOYMENT_TYPES.map((t) => (
                   <option key={t} value={t}>
                     {humanize(t)}
@@ -149,6 +157,33 @@ export function EmployeeForm({
                 ))}
               </Select>
             </Field>
+            {mode === "create" ? (
+              <Field label="Probation" htmlFor="probation_months" hint="HR and the manager get a reminder before it ends.">
+                <Select
+                  id="probation_months"
+                  name="probation_months"
+                  value={probation}
+                  onChange={(e) => {
+                    setProbation(e.target.value);
+                    setProbationTouched(true);
+                  }}
+                >
+                  {PROBATION_MONTHS.map((m) => (
+                    <option key={m} value={m}>
+                      {m === 0 ? "No probation" : `${m} months`}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : (
+              <Field
+                label="Probation ends on"
+                htmlFor="probation_end_date"
+                hint={v.confirmation_date ? "Confirmed. Changing this doesn't undo the confirmation." : "Leave blank for no probation. Move it to extend."}
+              >
+                <Input id="probation_end_date" name="probation_end_date" type="date" defaultValue={v.probation_end_date ?? ""} />
+              </Field>
+            )}
             <OptionSelect id="department_id" label="Department" value={v.department_id} options={options.departments} manageHint />
             <OptionSelect id="designation_id" label="Designation" value={v.designation_id} options={options.designations} manageHint />
             <OptionSelect id="location_id" label="Location" value={v.location_id} options={options.locations} manageHint />
@@ -191,6 +226,12 @@ export function EmployeeForm({
                   <Input id="password" name="password" type="text" autoComplete="new-password" minLength={8} maxLength={72} />
                 </Field>
               </FormGrid>
+            )}
+            {wantsLogin && (
+              <div>
+                <Checkbox name="send_welcome" label="Email a welcome message with the login details" defaultChecked />
+                <p className="ml-6 mt-1 text-xs text-slate-500">Sent to the personal email if you entered one, otherwise the work email. They choose their own password on first sign-in.</p>
+              </div>
             )}
           </CardBody>
         </Card>

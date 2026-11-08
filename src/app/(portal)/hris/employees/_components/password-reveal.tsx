@@ -25,7 +25,7 @@ export function PasswordReveal({ email, password }: { email: string; password: s
         Temporary login credentials
       </div>
       <p className="mt-1 text-xs text-amber-800">
-        This password is shown only once. Share it securely — the employee should change it from Settings after signing in.
+        This password is shown only once. Share it securely. They'll be asked to choose their own password when they first sign in.
       </p>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
         <dt className="text-xs font-medium text-slate-500 sm:pt-1.5">Email</dt>

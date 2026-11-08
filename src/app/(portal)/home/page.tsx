@@ -9,6 +9,7 @@ import { cn, formatDate, greeting, orgToday } from "@/lib/utils";
 import { Avatar, Card, CardBody, CardHeader, ProgressRing, WidgetCard, EmptyState } from "@/components/ui";
 import { PunchCard } from "../attendance/_components/punch-card";
 import { AttendanceWidget, type DayRow } from "./_components/attendance-widget";
+import { OnboardingBanner } from "./_components/onboarding-banner";
 
 export const metadata = { title: "Home" };
 
@@ -129,6 +130,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <p className="mt-0.5 text-sm text-slate-500">{formatDate(today, "EEEE, dd MMMM yyyy")}</p>
         </div>
       </div>
+
+      <OnboardingBanner employeeId={me.id} />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         {/* Profile & Team */}

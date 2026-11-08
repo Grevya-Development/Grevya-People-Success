@@ -32,9 +32,13 @@ export async function updatePassword(_prev: ActionState, fd: FormData): Promise<
   const password = str(fd, "password");
   const confirm = str(fd, "confirm");
   if (!password || password.length < 8) return fail("Password must be at least 8 characters");
+  if (password.length > 72) return fail("Password must be 72 characters or fewer");
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return fail("Use letters and numbers");
   if (password !== confirm) return fail("Passwords don't match");
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
+  const { error } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
   if (error) return fail(error.message);
+  // Refresh so the session's claims drop the "must change password" flag straight away.
+  await supabase.auth.refreshSession();
   return ok("Password updated", "/home");
 }

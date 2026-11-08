@@ -4,13 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { KeyRound, Loader2 } from "lucide-react";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Checkbox, Field, Input } from "@/components/ui";
 import { Dialog } from "@/components/ui/dialog";
 import { setEmployeeLogin } from "../actions";
 import { PasswordReveal } from "./password-reveal";
 
 /** "Create / reset login" — sets a temporary password and shows it exactly once. */
-export function LoginPanel({ employeeId, hasLogin, disabled }: { employeeId: string; hasLogin: boolean; disabled?: boolean }) {
+export function LoginPanel({ employeeId, hasLogin, disabled, emailTo }: { employeeId: string; hasLogin: boolean; disabled?: boolean; /** where the login email goes */ emailTo: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -29,6 +29,9 @@ export function LoginPanel({ employeeId, hasLogin, disabled }: { employeeId: str
       const res = await setEmployeeLogin(null, fd);
       if (res?.ok && res.login) {
         toast.success(res.message ?? "Login is ready");
+        const w = res.summary?.welcome;
+        if (w?.sent) toast.success(`Login details emailed to ${w.to}`);
+        else if (w) toast.warning(`Email not sent: ${w.reason}. Share the details yourself.`, { duration: 10000 });
         setCreds(res.login);
         router.refresh();
       } else {
@@ -61,7 +64,11 @@ export function LoginPanel({ employeeId, hasLogin, disabled }: { employeeId: str
             <Field label="Temporary password" htmlFor="login-password" hint="Leave blank to generate a strong password. Minimum 8 characters.">
               <Input id="login-password" name="password" type="text" autoComplete="new-password" minLength={8} maxLength={72} autoFocus />
             </Field>
-            {hasLogin && <p className="text-xs text-slate-500">The employee&apos;s current password will stop working immediately.</p>}
+            <Checkbox name="send_email" label={`Email the login details to ${emailTo}`} defaultChecked />
+            <p className="text-xs text-slate-500">
+              They&apos;ll choose their own password on first sign-in.
+              {hasLogin && " Their current password stops working immediately."}
+            </p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel

@@ -42,7 +42,7 @@ export async function changePassword(_prev: ActionState, fd: FormData): Promise<
   // Revoke only the throwaway session.
   await verifier.auth.signOut({ scope: "local" });
 
-  const { error } = await supabase.auth.updateUser({ password: next });
+  const { error } = await supabase.auth.updateUser({ password: next, data: { must_change_password: false } });
   if (error) return fail(error.message || "Could not update password");
   return ok("Password changed successfully");
 }

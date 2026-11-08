@@ -5,8 +5,11 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dbError } from "@/lib/actions";
+import { addMonths, format, parseISO } from "date-fns";
 import { str, bool, orgToday, normalizeMobile, MOBILE_HINT } from "@/lib/utils";
-import { EMPLOYMENT_TYPES, GENDERS, ROLES, STATUSES, UUID_RE, isAdminRole, type EmployeeResult } from "./_lib";
+import { firstLeaveYear, proratedQuota, remainingMonths } from "@/lib/leave-proration";
+import { sendWelcomeEmail } from "@/lib/email/welcome";
+import { EMPLOYMENT_TYPES, GENDERS, PROBATION_MONTHS, ROLES, STATUSES, UUID_RE, isAdminRole, type EmployeeResult, type CreateSummary } from "./_lib";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,6 +42,7 @@ type OrgFields = {
   role: string;
   status: string;
   employment_type: string;
+  probation_end_date: string | null;
 };
 
 function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
@@ -58,6 +62,9 @@ function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
   const role = str(fd, "role") ?? "employee";
   const status = str(fd, "status") ?? "active";
   const employment_type = str(fd, "employment_type") ?? "full_time";
+  // Create form: "probation_months" (0 = none). Edit form: "probation_end_date" (blank = none).
+  const probationMonths = str(fd, "probation_months");
+  let probation_end_date = str(fd, "probation_end_date");
 
   if (!first_name) return { error: "First name is required" };
   if (first_name.length > 60 || last_name.length > 60) return { error: "Names must be 60 characters or fewer" };
@@ -83,6 +90,15 @@ function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
   if (!(ROLES as readonly string[]).includes(role)) return { error: "Invalid role" };
   if (!(STATUSES as readonly string[]).includes(status)) return { error: "Invalid status" };
   if (!(EMPLOYMENT_TYPES as readonly string[]).includes(employment_type)) return { error: "Invalid employment type" };
+  if (probationMonths !== null) {
+    const months = Number(probationMonths);
+    if (!(PROBATION_MONTHS as readonly number[]).includes(months)) return { error: "Choose a probation period" };
+    probation_end_date = months > 0 ? format(addMonths(parseISO(date_of_joining), months), "yyyy-MM-dd") : null;
+  }
+  if (probation_end_date) {
+    if (!validDate(probation_end_date)) return { error: "Invalid probation end date" };
+    if (probation_end_date <= date_of_joining) return { error: "Probation must end after the date of joining" };
+  }
 
   return {
     data: {
@@ -101,6 +117,7 @@ function parseEmployee(fd: FormData): { data?: OrgFields; error?: string } {
       role,
       status,
       employment_type,
+      probation_end_date,
     },
   };
 }
@@ -170,8 +187,9 @@ async function provisionLogin(employeeId: string, email: string, password: strin
   const { data: emp, error: empErr } = await admin.from("employees").select("user_id").eq("id", employeeId).single();
   if (empErr || !emp) return "Employee not found";
 
+  // A temporary password: the person is asked to choose their own on first sign-in.
   if (emp.user_id) {
-    const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, email, email_confirm: true });
+    const { error } = await admin.auth.admin.updateUserById(emp.user_id, { password, email, email_confirm: true, user_metadata: { must_change_password: true } });
     return error ? error.message : null;
   }
 
@@ -180,7 +198,7 @@ async function provisionLogin(employeeId: string, email: string, password: strin
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+    user_metadata: { full_name: fullName, must_change_password: true },
   });
   if (created?.user) {
     userId = created.user.id;
@@ -190,7 +208,7 @@ async function provisionLogin(employeeId: string, email: string, password: strin
     if (!existing) return createErr?.message ?? "Could not create the login";
     const { data: other } = await admin.from("employees").select("id, full_name").eq("user_id", existing.id).maybeSingle();
     if (other && other.id !== employeeId) return `A login with this email is already linked to ${other.full_name}`;
-    const { error } = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true });
+    const { error } = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true, user_metadata: { must_change_password: true } });
     if (error) return error.message;
     userId = existing.id;
   }
@@ -238,16 +256,28 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
   }
 
   const warnings: string[] = [];
-  const { error: privErr } = await supabase.from("employee_private").insert({ employee_id: row.id });
+  const personalEmail = str(fd, "personal_email")?.toLowerCase() ?? null;
+  const { error: privErr } = await supabase
+    .from("employee_private")
+    .insert({ employee_id: row.id, personal_email: personalEmail && EMAIL_RE.test(personalEmail) ? personalEmail : null });
   if (privErr) warnings.push("private record: " + dbError(privErr));
 
-  const year = Number(orgToday().slice(0, 4));
-  const { data: types } = await supabase.from("leave_types").select("id, annual_quota").eq("active", true);
+  // Leave for the first year, prorated from the joining date.
+  const summary: CreateSummary = {};
+  const year = firstLeaveYear(data.date_of_joining, orgToday());
+  const { data: types } = await supabase.from("leave_types").select("id, code, annual_quota").eq("active", true).order("sort_order");
   if (types && types.length > 0) {
-    const { error: balErr } = await supabase.from("leave_balances").insert(
-      types.map((t) => ({ employee_id: row.id, leave_type_id: t.id, year, allocated: Number(t.annual_quota) || 0, used: 0 })),
-    );
+    const rows = types.map((t) => ({ employee_id: row.id, leave_type_id: t.id, year, allocated: proratedQuota(Number(t.annual_quota), data.date_of_joining, year), used: 0 }));
+    const { error: balErr } = await supabase.from("leave_balances").insert(rows);
     if (balErr) warnings.push("leave balances: " + dbError(balErr));
+    else
+      summary.leave = {
+        year,
+        months: remainingMonths(data.date_of_joining, year),
+        balances: rows
+          .map((r, i) => ({ code: types[i].code, allocated: r.allocated, annual: Number(types[i].annual_quota) }))
+          .filter((b) => b.annual > 0),
+      };
   }
 
   let login: { email: string; password: string } | undefined;
@@ -257,13 +287,58 @@ export async function createEmployee(_prev: EmployeeResult, fd: FormData): Promi
     else login = { email: data.email, password };
   }
 
+  if (login && bool(fd, "send_welcome")) {
+    const extra = await joinerContext(row.id);
+    summary.welcome = await sendWelcomeEmail({
+      to: personalEmail && EMAIL_RE.test(personalEmail) ? personalEmail : data.email,
+      name: row.full_name ?? data.first_name,
+      loginEmail: login.email,
+      password: login.password,
+      joiningDate: data.date_of_joining,
+      designation: extra.designation,
+      managerName: extra.managerName,
+    });
+  }
+
+  // Onboarding checklist + IT request are created by the database when the employee is added.
+  const { data: tasks } = await supabase.from("onboarding_tasks").select("auto_key, link, link_label").eq("employee_id", row.id);
+  summary.onboardingTasks = tasks?.length ?? 0;
+  const it = tasks?.find((t) => t.auto_key === "it_setup");
+  summary.itRequest = it?.link_label ? { label: it.link_label, url: it.link } : null;
+  summary.probationEnd = data.probation_end_date;
+
   revalidateEmployees(row.id);
+  revalidatePath("/hris/onboarding");
   return {
     ok: true,
     employeeId: row.id,
     message: `${row.full_name} added`,
     warning: warnings.length ? `Employee created, but some steps failed — ${warnings.join("; ")}` : undefined,
     login,
+    summary,
+  };
+}
+
+/** Designation and manager name, for the welcome email. */
+async function joinerContext(employeeId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("employees")
+    .select("date_of_joining, designation:designations(title), manager:manager_id(full_name), private:employee_private(personal_email)")
+    .eq("id", employeeId)
+    .maybeSingle();
+  const d = data as unknown as {
+    date_of_joining: string;
+    designation: { title: string } | null;
+    manager: { full_name: string | null } | null;
+    private: { personal_email: string | null } | { personal_email: string | null }[] | null;
+  } | null;
+  const priv = Array.isArray(d?.private) ? d?.private[0] : d?.private;
+  return {
+    joiningDate: d?.date_of_joining ?? null,
+    designation: d?.designation?.title ?? null,
+    managerName: d?.manager?.full_name ?? null,
+    personalEmail: priv?.personal_email ?? null,
   };
 }
 
@@ -319,14 +394,31 @@ export async function setEmployeeLogin(_prev: EmployeeResult, fd: FormData): Pro
   if (!pw.password) return failure(pw.error ?? "Invalid password");
 
   const supabase = await createClient();
-  const { data: emp } = await supabase.from("employees").select("id, email, full_name, status, role").eq("id", id).maybeSingle();
+  const { data: emp } = await supabase.from("employees").select("id, email, full_name, status, role, user_id").eq("id", id).maybeSingle();
   if (!emp) return failure("Employee not found");
   if (emp.status === "exited") return failure("Exited employees can't be given a login");
   if (isAdminRole(emp.role) && emp.id !== me.id && !me.isSuperAdmin) return failure("Only a Super Admin can reset an admin's login");
 
+  const hadLogin = !!emp.user_id;
   const err = await provisionLogin(emp.id, emp.email.toLowerCase(), pw.password, emp.full_name ?? emp.email);
   if (err) return failure(err);
 
+  let summary: CreateSummary | undefined;
+  if (bool(fd, "send_email")) {
+    const extra = await joinerContext(emp.id);
+    const welcome = await sendWelcomeEmail({
+      to: !hadLogin && extra.personalEmail ? extra.personalEmail : emp.email,
+      name: emp.full_name ?? emp.email,
+      loginEmail: emp.email.toLowerCase(),
+      password: pw.password,
+      joiningDate: extra.joiningDate,
+      designation: extra.designation,
+      managerName: extra.managerName,
+      reset: hadLogin,
+    });
+    summary = { welcome };
+  }
+
   revalidateEmployees(id);
-  return { ok: true, employeeId: id, message: "Login is ready", login: { email: emp.email, password: pw.password } };
+  return { ok: true, employeeId: id, message: "Login is ready", login: { email: emp.email, password: pw.password }, summary };
 }

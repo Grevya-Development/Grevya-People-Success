@@ -15,7 +15,7 @@ export default async function NewEmployeePage() {
     <div>
       <PageHeader
         title="Add Employee"
-        description="Creates the employee record, a private profile and this year's leave balances."
+        description="Creates the record, prorated leave, an onboarding checklist and the IT setup request, and can email a welcome message."
         breadcrumbs={[{ label: "HRIS", href: "/hris" }, { label: "Employee List", href: "/hris/employees" }, { label: "Add Employee" }]}
       />
       <EmployeeForm
@@ -38,6 +38,7 @@ export default async function NewEmployeePage() {
           role: "employee",
           status: "active",
           employment_type: "full_time",
+          probation_end_date: null,
         }}
       />
     </div>

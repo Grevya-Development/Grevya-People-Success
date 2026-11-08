@@ -37,6 +37,14 @@ export async function proxy(request: NextRequest) {
     url.search = path && path !== "/" ? `?next=${encodeURIComponent(path)}` : "";
     return NextResponse.redirect(url);
   }
+  // A temporary password set by HR: choose your own before using the portal.
+  const mustChange = (user?.user_metadata as { must_change_password?: boolean } | undefined)?.must_change_password === true;
+  if (user && mustChange && !path.startsWith("/auth") && !path.startsWith("/api/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/reset";
+    url.search = "?first=1";
+    return NextResponse.redirect(url);
+  }
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/home";

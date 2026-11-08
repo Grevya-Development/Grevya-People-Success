@@ -417,14 +417,14 @@ isOneToOne: true
                   ]
                 },"employees": {
                   Row: {
-                    "avatar_url": string | null,"bio": string | null,"blood_group": string | null,"created_at": string,"date_of_birth": string | null,"date_of_joining": string,"department_id": string | null,"designation_id": string | null,"email": string,"employee_code": string,"employment_type": string,"first_name": string,"full_name": string | null,"gender": string | null,"id": string,"last_name": string,"location_id": string | null,"manager_id": string | null,"marital_status": string | null,"phone": string | null,"role": string,"status": string,"updated_at": string,"user_id": string | null
+                    "avatar_url": string | null,"bio": string | null,"blood_group": string | null,"confirmation_date": string | null,"created_at": string,"date_of_birth": string | null,"date_of_joining": string,"department_id": string | null,"designation_id": string | null,"email": string,"employee_code": string,"employment_type": string,"first_name": string,"full_name": string | null,"gender": string | null,"id": string,"last_name": string,"location_id": string | null,"manager_id": string | null,"marital_status": string | null,"phone": string | null,"probation_end_date": string | null,"role": string,"status": string,"updated_at": string,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_url"?: string | null,"bio"?: string | null,"blood_group"?: string | null,"created_at"?: string,"date_of_birth"?: string | null,"date_of_joining"?: string,"department_id"?: string | null,"designation_id"?: string | null,"email": string,"employee_code": string,"employment_type"?: string,"first_name": string,"full_name"?: never,"gender"?: string | null,"id"?: string,"last_name"?: string,"location_id"?: string | null,"manager_id"?: string | null,"marital_status"?: string | null,"phone"?: string | null,"role"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string | null
+                    "avatar_url"?: string | null,"bio"?: string | null,"blood_group"?: string | null,"confirmation_date"?: string | null,"created_at"?: string,"date_of_birth"?: string | null,"date_of_joining"?: string,"department_id"?: string | null,"designation_id"?: string | null,"email": string,"employee_code": string,"employment_type"?: string,"first_name": string,"full_name"?: never,"gender"?: string | null,"id"?: string,"last_name"?: string,"location_id"?: string | null,"manager_id"?: string | null,"marital_status"?: string | null,"phone"?: string | null,"probation_end_date"?: string | null,"role"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Update: {
-                    "avatar_url"?: string | null,"bio"?: string | null,"blood_group"?: string | null,"created_at"?: string,"date_of_birth"?: string | null,"date_of_joining"?: string,"department_id"?: string | null,"designation_id"?: string | null,"email"?: string,"employee_code"?: string,"employment_type"?: string,"first_name"?: string,"full_name"?: never,"gender"?: string | null,"id"?: string,"last_name"?: string,"location_id"?: string | null,"manager_id"?: string | null,"marital_status"?: string | null,"phone"?: string | null,"role"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string | null
+                    "avatar_url"?: string | null,"bio"?: string | null,"blood_group"?: string | null,"confirmation_date"?: string | null,"created_at"?: string,"date_of_birth"?: string | null,"date_of_joining"?: string,"department_id"?: string | null,"designation_id"?: string | null,"email"?: string,"employee_code"?: string,"employment_type"?: string,"first_name"?: string,"full_name"?: never,"gender"?: string | null,"id"?: string,"last_name"?: string,"location_id"?: string | null,"manager_id"?: string | null,"marital_status"?: string | null,"phone"?: string | null,"probation_end_date"?: string | null,"role"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -1013,6 +1013,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"onboarding_tasks": {
+                  Row: {
+                    "auto_key": string | null,"completed_at": string | null,"completed_by": string | null,"created_at": string,"description": string | null,"due_date": string | null,"employee_id": string,"id": string,"link": string | null,"link_label": string | null,"note": string | null,"owner": string,"sort_order": number,"status": string,"template_id": string | null,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auto_key"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"employee_id": string,"id"?: string,"link"?: string | null,"link_label"?: string | null,"note"?: string | null,"owner": string,"sort_order"?: number,"status"?: string,"template_id"?: string | null,"title": string
+                  }
+                  Update: {
+                    "auto_key"?: string | null,"completed_at"?: string | null,"completed_by"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"employee_id"?: string,"id"?: string,"link"?: string | null,"link_label"?: string | null,"note"?: string | null,"owner"?: string,"sort_order"?: number,"status"?: string,"template_id"?: string | null,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "onboarding_tasks_completed_by_fkey"
+      columns: ["completed_by"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "onboarding_tasks_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "onboarding_tasks_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "onboarding_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"onboarding_templates": {
+                  Row: {
+                    "active": boolean,"auto_key": string | null,"created_at": string,"description": string | null,"due_basis": string,"due_offset_days": number,"id": string,"owner": string,"sort_order": number,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"auto_key"?: string | null,"created_at"?: string,"description"?: string | null,"due_basis"?: string,"due_offset_days"?: number,"id"?: string,"owner": string,"sort_order"?: number,"title": string
+                  }
+                  Update: {
+                    "active"?: boolean,"auto_key"?: string | null,"created_at"?: string,"description"?: string | null,"due_basis"?: string,"due_offset_days"?: number,"id"?: string,"owner"?: string,"sort_order"?: number,"title"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"org_settings": {
                   Row: {
                     "key": string,"updated_at": string,"value": NonNullable<Json>
@@ -1084,6 +1130,26 @@ isOneToOne: false
       columns: ["policy_id"]
 isOneToOne: false
       referencedRelation: "policies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"probation_reminders": {
+                  Row: {
+                    "employee_id": string,"kind": string,"probation_end_date": string,"sent_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "employee_id": string,"kind": string,"probation_end_date": string,"sent_at"?: string
+                  }
+                  Update: {
+                    "employee_id"?: string,"kind"?: string,"probation_end_date"?: string,"sent_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "probation_reminders_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
       referencedColumns: ["id"]
     }
                   ]
@@ -1424,11 +1490,26 @@ isOneToOne: false
 "notify":
 { Args: { "emp": string,"p_body": string,"p_link": string,"p_title": string }; Returns: undefined
                            },
+"onboarding_condition":
+{ Args: { "p_employee": string,"p_key": string }; Returns: boolean
+                           },
 "org_today":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "ping_email_dispatch":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"refresh_onboarding":
+{ Args: { "p_employee": string }; Returns: undefined
+                           },
+"send_probation_reminders":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"set_onboarding_task":
+{ Args: { "p_note"?: string,"p_status": string,"p_task": string }; Returns: undefined
+                           },
+"start_onboarding":
+{ Args: { "p_employee": string }; Returns: number
                            },
 "training_session_seats":
 { Args: Record<PropertyKey, never>; Returns: {

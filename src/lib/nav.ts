@@ -73,6 +73,7 @@ export const MODULES: NavModule[] = [
       { key: "hris.profile", label: "My Profile", href: "/profile" },
       { key: "hris.salary-letters", label: "My Salary Letters", href: "/hris/salary-letters" },
       { key: "hris.employees", label: "Employee List", href: "/hris/employees" },
+      { key: "hris.onboarding", label: "Onboarding", href: "/onboarding" },
       { key: "hris.policies", label: "Policies & FAQs", href: "/hris/policies" },
       { key: "hris.org-chart", label: "Organization Chart", href: "/hris/org-chart" },
     ],
@@ -252,6 +253,7 @@ export const MODULES: NavModule[] = [
     items: [
       { key: "admin.accounts", label: "User Accounts & Roles", href: "/admin/accounts", audience: "super" },
       { key: "admin.employees", label: "Employees", href: "/hris/employees" },
+      { key: "admin.onboarding", label: "Onboarding & Probation", href: "/hris/onboarding" },
       { key: "admin.org", label: "Departments & Locations", href: "/admin/org" },
       { key: "admin.letters", label: "Letters & Contracts", href: "/hris/admin/letters" },
       { key: "admin.policies", label: "Policies & FAQs", href: "/hris/admin/policies" },

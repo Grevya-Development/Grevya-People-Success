@@ -10,6 +10,10 @@ export function roleTone(role: string) {
 export const STATUSES = ["active", "notice_period", "exited"] as const;
 export const EMPLOYMENT_TYPES = ["full_time", "part_time", "contract", "intern"] as const;
 export const GENDERS = ["male", "female", "other"] as const;
+/** Probation choices on the Add Employee form (0 = no probation). */
+export const PROBATION_MONTHS = [0, 3, 6, 12] as const;
+/** Usual probation for an employment type. */
+export const defaultProbationMonths = (employmentType: string) => (employmentType === "full_time" || employmentType === "part_time" ? 6 : 0);
 
 export const ROLE_LABELS: Record<string, string> = {
   employee: "Employee",
@@ -37,6 +41,8 @@ export type EmployeeFormValues = {
   role: string;
   status: string;
   employment_type: string;
+  probation_end_date: string | null;
+  confirmation_date?: string | null;
 };
 
 /** Result of create / update / login actions — carries a one-time password when a login was provisioned. */
@@ -47,6 +53,16 @@ export type EmployeeResult = {
   warning?: string;
   employeeId?: string;
   login?: { email: string; password: string };
+  summary?: CreateSummary;
 } | null;
+
+/** What happened when an employee was added (shown on the success screen). */
+export type CreateSummary = {
+  leave?: { year: number; months: number; balances: { code: string; allocated: number; annual: number }[] };
+  welcome?: { sent: true; to: string } | { sent: false; to: string; reason: string };
+  onboardingTasks?: number;
+  itRequest?: { label: string; url: string | null } | null;
+  probationEnd?: string | null;
+};
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
