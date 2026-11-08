@@ -3,7 +3,8 @@
 import { createClient as createStatelessClient } from "@supabase/supabase-js";
 import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { ok, fail, type ActionState } from "@/lib/actions";
+import { ok, fail, dbError, type ActionState } from "@/lib/actions";
+import { revalidatePath } from "next/cache";
 import type { Database } from "@/lib/database.types";
 
 function rawPassword(fd: FormData, key: string) {
@@ -51,4 +52,16 @@ export async function signOutEverywhere(): Promise<ActionState> {
   const { error } = await supabase.auth.signOut({ scope: "global" });
   if (error) return fail(error.message || "Could not sign out");
   return ok("Signed out of all devices", "/login");
+}
+
+/** Turn notification emails on or off for yourself. */
+export async function setEmailNotifications(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const me = await getCurrentEmployee();
+  if (!me) return fail("Not signed in");
+  const enabled = fd.get("enabled") === "on";
+  const supabase = await createClient();
+  const { error } = await supabase.from("email_preferences").upsert({ employee_id: me.id, email_enabled: enabled });
+  if (error) return fail(dbError(error));
+  revalidatePath("/settings");
+  return ok(enabled ? "Emails on. We'll email you about approvals, payslips and other updates." : "Emails off. You'll still see updates under Alerts.");
 }

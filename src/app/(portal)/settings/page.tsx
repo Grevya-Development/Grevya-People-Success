@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { KeyRound, LogOut, ShieldCheck, UserCog } from "lucide-react";
+import { KeyRound, LogOut, Mail, MailX, ShieldCheck, UserCog } from "lucide-react";
 import { Badge, Card, CardBody, CardHeader, Field, Input, PageHeader } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { ActionButton } from "@/components/ui/action-button";
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 import { AvatarUploader } from "../profile/_components/avatar-uploader";
 import { ROLE_LABELS } from "../profile/_lib/shared";
-import { changePassword, signOutEverywhere } from "./actions";
+import { changePassword, setEmailNotifications, signOutEverywhere } from "./actions";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -29,6 +29,8 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const name = me.full_name ?? me.first_name;
+  const { data: pref } = await supabase.from("email_preferences").select("email_enabled").eq("employee_id", me.id).maybeSingle();
+  const emailOn = pref?.email_enabled ?? true;
 
   return (
     <div>
@@ -118,6 +120,34 @@ export default async function SettingsPage() {
                 successMessage="Signed out of all devices"
               >
                 <LogOut className="h-4 w-4" /> Sign out of all devices
+              </ActionButton>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title={
+              <span className="flex items-center gap-2">
+                {emailOn ? <Mail className="h-4 w-4 text-primary-600" /> : <MailX className="h-4 w-4 text-slate-400" />}
+                Email notifications
+              </span>
+            }
+          />
+          <CardBody>
+            <p className="text-sm text-slate-600">
+              We email you about things that need you — approvals, leave decisions, payslips, letters and replies — to{" "}
+              <span className="font-medium text-slate-800">{me.email}</span>. Everything also stays under Alerts.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Badge tone={emailOn ? "green" : "gray"}>{emailOn ? "On" : "Off"}</Badge>
+              <ActionButton
+                action={setEmailNotifications}
+                fields={{ enabled: emailOn ? "" : "on" }}
+                variant={emailOn ? "outline" : "primary"}
+                size="md"
+              >
+                {emailOn ? "Turn emails off" : "Turn emails on"}
               </ActionButton>
             </div>
           </CardBody>

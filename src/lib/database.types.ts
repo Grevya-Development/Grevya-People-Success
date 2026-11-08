@@ -57,6 +57,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"app_private_settings": {
+                  Row: {
+                    "key": string,"updated_at": string,"value": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "key": string,"updated_at"?: string,"value": string
+                  }
+                  Update: {
+                    "key"?: string,"updated_at"?: string,"value"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"attendance_records": {
                   Row: {
                     "check_in": string | null,"check_out": string | null,"created_at": string,"date": string,"employee_id": string,"id": string,"notes": string | null,"source": string,"status": string,"work_mode": string
@@ -320,6 +334,26 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"email_preferences": {
+                  Row: {
+                    "email_enabled": boolean,"employee_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "email_enabled"?: boolean,"employee_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "email_enabled"?: boolean,"employee_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_preferences_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: true
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"employee_education": {
                   Row: {
@@ -961,14 +995,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "body": string | null,"created_at": string,"employee_id": string,"id": string,"link": string | null,"read_at": string | null,"title": string
+                    "body": string | null,"created_at": string,"email_attempts": number,"email_claimed_at": string | null,"email_error": string | null,"email_id": string | null,"email_next_at": string,"email_sent_at": string | null,"email_status": string,"employee_id": string,"id": string,"link": string | null,"read_at": string | null,"title": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "body"?: string | null,"created_at"?: string,"employee_id": string,"id"?: string,"link"?: string | null,"read_at"?: string | null,"title": string
+                    "body"?: string | null,"created_at"?: string,"email_attempts"?: number,"email_claimed_at"?: string | null,"email_error"?: string | null,"email_id"?: string | null,"email_next_at"?: string,"email_sent_at"?: string | null,"email_status"?: string,"employee_id": string,"id"?: string,"link"?: string | null,"read_at"?: string | null,"title": string
                   }
                   Update: {
-                    "body"?: string | null,"created_at"?: string,"employee_id"?: string,"id"?: string,"link"?: string | null,"read_at"?: string | null,"title"?: string
+                    "body"?: string | null,"created_at"?: string,"email_attempts"?: number,"email_claimed_at"?: string | null,"email_error"?: string | null,"email_id"?: string | null,"email_next_at"?: string,"email_sent_at"?: string | null,"email_status"?: string,"employee_id"?: string,"id"?: string,"link"?: string | null,"read_at"?: string | null,"title"?: string
                   }
                   Relationships: [
                     {
@@ -1367,6 +1401,11 @@ isOneToOne: false
 "candidate_notes":
 { Args: { "cand": string }; Returns: string
                            },
+"claim_email_batch":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempts": number,"body": string,"created_at": string,"email": string,"employee_id": string,"full_name": string,"id": string,"link": string,"title": string
+            }[]
+                           },
 "is_above_me":
 { Args: { "emp": string }; Returns: boolean
                            },
@@ -1387,6 +1426,9 @@ isOneToOne: false
                            },
 "org_today":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"ping_email_dispatch":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "training_session_seats":
 { Args: Record<PropertyKey, never>; Returns: {

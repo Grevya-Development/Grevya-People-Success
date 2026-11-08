@@ -78,3 +78,16 @@ src/components/shell/     header, sidebar flyouts, search, notifications
 src/app/(portal)/<module> one folder per module (pages, actions.ts, _components)
 docs/CONVENTIONS.md       coding conventions
 ```
+
+
+## Email notifications (Resend)
+
+Every in-app notification (approvals, leave decisions, payslips, letters, tickets, …) is queued on
+`public.notifications` and emailed through Resend from `peoplesuccess.grevya.com`: batches of up to 100,
+idempotency keys, retries (1, 5, 15, 60 min; 5 attempts), and a personal on/off switch in **Settings**.
+The database pings `/api/email/dispatch` right after each notification (pg_net) and every minute (pg_cron);
+the target URL lives in `public.app_private_settings` (`email_dispatch_url`, default the production URL).
+Notifications copied in from the Service Desk are skipped (the desk emails those itself). Notifications that
+existed before email was enabled are never sent; outside production only `EMAIL_DEV_ALLOWLIST` recipients get mail.
+
+Setup: `npm run db:push` (applies the migration), then set `RESEND_API_KEY` and `EMAIL_FROM` in Vercel and redeploy.
