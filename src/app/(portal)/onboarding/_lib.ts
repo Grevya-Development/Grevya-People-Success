@@ -47,8 +47,10 @@ export function taskActionHref(autoKey: string | null, employeeId: string, opts:
   switch (autoKey) {
     case "offer_letter":
     case "appointment_letter":
-    case "confirmation":
-      return opts.isHR ? { href: `/hris/admin/letters?tab=issue&employee=${employeeId}`, label: "Issue letter" } : null;
+    case "confirmation": {
+      const type = autoKey === "offer_letter" ? "offer" : autoKey === "appointment_letter" ? "appointment" : "confirmation";
+      return opts.isHR ? { href: `/hris/admin/letters?tab=issue&employee=${employeeId}&type=${type}`, label: "Issue letter" } : null;
+    }
     case "contract":
       return opts.isHR ? { href: "/hris/contracts", label: "Add contract" } : null;
     case "salary_structure":

@@ -6,7 +6,7 @@ import { orgToday } from "@/lib/utils";
 import { Card, CardBody, CardHeader, EmptyState, PageHeader, WidgetCard, Badge, buttonClass } from "@/components/ui";
 import { getBalances, getHolidays, getLeaveTypes } from "../_lib/data";
 import { addDays, shortDay } from "../_lib/dates";
-import { ApplyLeaveForm, type ApplyType } from "../_components/apply-leave-form";
+import { ApplyLeaveForm, type ApplyType, type ExistingLeave } from "../_components/apply-leave-form";
 import { BalanceCard } from "../_components/shared";
 
 export const metadata = { title: "Apply Leave" };
@@ -18,11 +18,26 @@ export default async function ApplyLeavePage() {
   const year = Number(today.slice(0, 4));
 
   const types = await getLeaveTypes(supabase);
-  const [thisYear, nextYear, holidays] = await Promise.all([
+  const [thisYear, nextYear, holidays, mine] = await Promise.all([
     getBalances(supabase, me.id, year, types),
     getBalances(supabase, me.id, year + 1, types),
     getHolidays(supabase, `${year}-01-01`, `${year + 1}-12-31`, me.location_id),
+    supabase
+      .from("leave_requests")
+      .select("start_date, end_date, status, half_day, half_day_session, leave_type:leave_types(name)")
+      .eq("employee_id", me.id)
+      .in("status", ["pending", "approved"])
+      .gte("end_date", addDays(today, -30))
+      .order("start_date"),
   ]);
+  const existing: ExistingLeave[] = (mine.data ?? []).map((l) => ({
+    start: l.start_date,
+    end: l.end_date,
+    status: l.status,
+    type: (l.leave_type as { name: string } | null)?.name ?? "Leave",
+    halfDay: l.half_day,
+    session: l.half_day_session,
+  }));
 
   const applyTypes: ApplyType[] = types.map((t) => ({
     id: t.id,
@@ -56,7 +71,7 @@ export default async function ApplyLeavePage() {
           <CardHeader title="Leave request" description="Weekends and public holidays inside the range are not counted. Optional holidays count as leave days." />
           <CardBody>
             {applyTypes.length ? (
-              <ApplyLeaveForm types={applyTypes} holidays={holidays.filter((h) => h.type === "public").map((h) => ({ date: h.date, name: h.name }))} today={today} minDate={addDays(today, -30)} />
+              <ApplyLeaveForm types={applyTypes} holidays={holidays.filter((h) => h.type === "public").map((h) => ({ date: h.date, name: h.name }))} today={today} minDate={addDays(today, -30)} existing={existing} />
             ) : (
               <EmptyState icon={Umbrella} title="No leave types configured" description="HR hasn't set up any leave types yet. Please check back later." />
             )}

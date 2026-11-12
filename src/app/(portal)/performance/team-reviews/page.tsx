@@ -76,9 +76,9 @@ export default async function TeamReviewsPage({ searchParams }: { searchParams: 
   return (
     <div>
       <PageHeader
-        title="My Team Reviews"
+        title={scope === "all" ? "Employee Reviews" : "My Team Reviews"}
         description={cycle ? `${cycle.name} · ${formatDate(cycle.start_date)} – ${formatDate(cycle.end_date)}` : undefined}
-        breadcrumbs={[{ label: "Performance", href: "/performance" }, { label: "Reviews" }, { label: "My Team Reviews" }]}
+        breadcrumbs={[{ label: "Performance", href: "/performance" }, { label: "Reviews" }, { label: scope === "all" ? "Employee Reviews" : "My Team Reviews" }]}
         actions={<CycleSelect cycles={cycles} value={cycle?.id ?? null} />}
       />
 

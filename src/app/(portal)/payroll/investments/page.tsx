@@ -54,7 +54,7 @@ export default async function InvestmentsPage() {
           regime={decl && isRegime(decl.regime) ? decl.regime : "new"}
           salary={salary}
           epfAnnual={s ? annualEpf(toNum(s.basic)) : 0}
-          readOnly={status !== "draft"}
+          readOnly={status !== "draft" && status !== "rejected"}
         />
       </div>
     </div>

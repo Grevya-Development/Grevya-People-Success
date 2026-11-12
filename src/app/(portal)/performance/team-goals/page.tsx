@@ -57,9 +57,9 @@ export default async function TeamGoalsPage({ searchParams }: { searchParams: Pr
   return (
     <div>
       <PageHeader
-        title="My Team Goals"
+        title={scope === "all" ? "Employee Goals" : "My Team Goals"}
         description={scope === "all" ? "Goals across the organisation" : "Review, approve and support your team's goals."}
-        breadcrumbs={[{ label: "Performance", href: "/performance" }, { label: "Goal" }, { label: "My Team Goals" }]}
+        breadcrumbs={[{ label: "Performance", href: "/performance" }, { label: "Goal" }, { label: scope === "all" ? "Employee Goals" : "My Team Goals" }]}
         actions={
           <>
             <CycleSelect cycles={cycles} value={cycle?.id ?? null} />

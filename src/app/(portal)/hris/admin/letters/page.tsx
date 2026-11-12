@@ -26,7 +26,7 @@ import {
 } from "@/components/ui";
 import { LinkTabs } from "@/components/ui/link-tabs";
 import { ActionButton } from "@/components/ui/action-button";
-import { LETTER_LABELS, LETTER_TYPES, isLetterType, letterTypeLabel } from "../../_lib/letter-templates";
+import { LETTER_LABELS, LETTER_TYPES, isLetterType, letterTypeLabel, type LetterType } from "../../_lib/letter-templates";
 import { generateFor, loadLetterData } from "../../_lib/letter-data";
 import { deleteLetter, rejectLetterRequest } from "./actions";
 import { ProcessRequestDialog } from "./_components/process-request";
@@ -80,7 +80,7 @@ export default async function AdminLettersPage({ searchParams }: { searchParams:
       />
 
       {tab === "requests" && <RequestsTab me={me} />}
-      {tab === "issue" && <IssueTab defaultEmployeeId={sp.employee} />}
+      {tab === "issue" && <IssueTab defaultEmployeeId={sp.employee} defaultType={isLetterType(sp.type) ? sp.type : undefined} />}
       {tab === "issued" && <IssuedTab sp={sp} />}
     </div>
   );
@@ -237,7 +237,7 @@ async function RequestsTab({ me }: { me: Awaited<ReturnType<typeof requireHR>> }
   );
 }
 
-async function IssueTab({ defaultEmployeeId }: { defaultEmployeeId?: string }) {
+async function IssueTab({ defaultEmployeeId, defaultType }: { defaultEmployeeId?: string; defaultType?: LetterType }) {
   const supabase = await createClient();
   const { data } = await supabase.from("employees").select("id, full_name, employee_code, status").order("first_name").order("last_name").limit(5000);
   const employees: EmployeeOption[] = (data ?? []).map((e) => ({ id: e.id, full_name: e.full_name ?? "", employee_code: e.employee_code, status: e.status }));
@@ -250,7 +250,7 @@ async function IssueTab({ defaultEmployeeId }: { defaultEmployeeId?: string }) {
       />
       <div className="p-5">
         {employees.length ? (
-          <IssueLetterForm employees={employees} defaultEmployeeId={defaultEmployeeId} today={orgToday()} />
+          <IssueLetterForm employees={employees} defaultEmployeeId={defaultEmployeeId} defaultType={defaultType} today={orgToday()} />
         ) : (
           <EmptyState title="No employees yet" description="Add employees before issuing letters." action={<Link href="/hris/employees/new" className={buttonClass("primary", "sm")}>Add employee</Link>} />
         )}

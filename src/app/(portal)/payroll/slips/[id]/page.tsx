@@ -10,6 +10,8 @@ import { amountInWords, maskAccount, maskPan, monthLabel, parseLines, toNum } fr
 
 export const metadata = { title: "Payslip" };
 
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Print only the payslip, whatever the surrounding shell renders. */
@@ -46,6 +48,8 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
   const rows = Math.max(earnings.length, deductions.length);
   const period = monthLabel(slip.year, slip.month);
   const own = slip.employee_id === me.id;
+  // Saved PDF name: Grevya_<Month>_<Year>_<Employee ID>_Payslip, e.g. Grevya_November_2026_GRV001_Payslip
+  const fileName = ["Grevya", MONTH_NAMES[slip.month - 1], slip.year, emp.employee_code.replace(/[^A-Za-z0-9-]+/g, ""), "Payslip"].join("_");
 
   const details: [string, string][] = [
     ["Employee name", emp.full_name ?? "—"],
@@ -73,7 +77,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
-              <PrintButton />
+              <PrintButton fileName={fileName} />
             </>
           }
         />

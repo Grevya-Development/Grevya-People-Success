@@ -11,9 +11,19 @@ import { LetterEditor } from "./letter-editor";
 
 export type EmployeeOption = { id: string; full_name: string; employee_code: string; status: string };
 
-export function IssueLetterForm({ employees, defaultEmployeeId, today }: { employees: EmployeeOption[]; defaultEmployeeId?: string; today: string }) {
+export function IssueLetterForm({
+  employees,
+  defaultEmployeeId,
+  defaultType,
+  today,
+}: {
+  employees: EmployeeOption[];
+  defaultEmployeeId?: string;
+  defaultType?: LetterType;
+  today: string;
+}) {
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId && employees.some((e) => e.id === defaultEmployeeId) ? defaultEmployeeId : "");
-  const [type, setType] = useState<LetterType | "">("");
+  const [type, setType] = useState<LetterType | "">(defaultType ?? "");
   const [query, setQuery] = useState("");
   const [extras, setExtras] = useState<Record<string, string>>({});
   const [title, setTitle] = useState("");

@@ -5,11 +5,13 @@ import { PortalShell } from "@/components/shell/portal-shell";
 import type { TaskItem } from "@/components/shell/header-menus";
 import { orgToday } from "@/lib/utils";
 import { SERVICE_DESK_URL } from "@/lib/service-desk";
+import { portalMode } from "@/lib/portal-view";
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const me = await requireEmployee();
   const supabase = await createClient();
   const cookieStore = await cookies();
+  const mode = await portalMode(me);
 
   const [favs, addons, notes, unread, approvals, todos, announcements] = await Promise.all([
     supabase.from("favorites").select("module_key").eq("employee_id", me.id),
@@ -17,7 +19,8 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
     supabase.from("notifications").select("id, title, body, link, read_at, created_at").eq("employee_id", me.id).order("created_at", { ascending: false }).limit(12),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("employee_id", me.id).is("read_at", null),
     me.isManager ? loadTasks(supabase, me.id, me.isHR) : Promise.resolve([] as TaskItem[]),
-    loadTodos(supabase, me.id),
+    // The admin console shows work for the organisation, not personal to-dos.
+    mode === "admin" ? Promise.resolve([] as TaskItem[]) : loadTodos(supabase, me.id),
     supabase.from("announcements").select("id, title, body, pinned, created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(8),
   ]);
   const tasks = [...approvals.map((t) => ({ ...t, group: "approval" as const })), ...todos];
@@ -25,6 +28,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
   return (
     <PortalShell
       viewer={{ isManager: me.isManager, isHR: me.isHR, isSuperAdmin: me.isSuperAdmin }}
+      mode={mode}
       user={{ name: me.full_name ?? me.first_name, avatarUrl: me.avatar_url, designation: me.designation?.title ?? null, code: me.employee_code }}
       favorites={(favs.data ?? []).map((f) => f.module_key)}
       addons={addons.data ?? []}
@@ -42,7 +46,10 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
 type Client = Awaited<ReturnType<typeof createClient>>;
 
 async function loadTasks(supabase: Client, meId: string, isHR: boolean): Promise<TaskItem[]> {
-  const count = async (table: "leave_requests" | "regularization_requests" | "compoff_requests" | "claims" | "goals" | "reviews" | "resignations", statuses: string[]) => {
+  const count = async (
+    table: "leave_requests" | "regularization_requests" | "compoff_requests" | "claims" | "goals" | "reviews" | "resignations" | "external_trainings",
+    statuses: string[],
+  ) => {
     const { count } = await supabase.from(table).select("id", { count: "exact", head: true }).in("status", statuses).neq("employee_id", meId);
     return count ?? 0;
   };
@@ -52,9 +59,10 @@ async function loadTasks(supabase: Client, meId: string, isHR: boolean): Promise
     count("regularization_requests", ["pending"]).then((n) => ({ label: "Regularization approvals", href: "/attendance/bulk-approval", count: n })),
     count("compoff_requests", ["pending"]).then((n) => ({ label: "Comp-off approvals", href: "/attendance/bulk-approval", count: n })),
     count("claims", ["submitted"]).then((n) => ({ label: "Reimbursement claims", href: "/reimbursement/approvals", count: n })),
-    count("goals", ["pending_approval"]).then((n) => ({ label: "Goal approvals", href: "/performance/team-goals", count: n })),
-    count("reviews", ["pending_manager"]).then((n) => ({ label: "Team reviews to complete", href: "/performance/team-reviews", count: n })),
+    count("goals", ["pending_approval"]).then((n) => ({ label: "Goal approvals", href: isHR ? "/performance/team-goals?scope=all" : "/performance/team-goals", count: n })),
+    count("reviews", ["pending_manager"]).then((n) => ({ label: "Team reviews to complete", href: isHR ? "/performance/team-reviews?scope=all" : "/performance/team-reviews", count: n })),
     count("resignations", isHR ? ["pending_manager", "pending_hr"] : ["pending_manager"]).then((n) => ({ label: "Resignation approvals", href: "/exit/approvals", count: n })),
+    count("external_trainings", ["pending"]).then((n) => ({ label: "External training approvals", href: "/learning/external/approvals", count: n })),
   ]);
 
   if (!isHR) return base;

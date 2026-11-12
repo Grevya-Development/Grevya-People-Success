@@ -70,7 +70,7 @@ export default async function FbpPage() {
             />
             <CardBody>
               {/* No status-based key: remounting on submit would drop the ActionForm success toast. */}
-              <FbpForm components={components} fbpTotal={fbpTotal} readOnly={status !== "draft"} />
+              <FbpForm components={components} fbpTotal={fbpTotal} readOnly={status !== "draft" && status !== "rejected"} />
             </CardBody>
           </Card>
 

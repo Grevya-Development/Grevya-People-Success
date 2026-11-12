@@ -138,7 +138,7 @@ export async function saveFbp(_prev: ActionState, fd: FormData): Promise<ActionS
     .eq("employee_id", me.id)
     .eq("financial_year", fy)
     .maybeSingle();
-  if (existing && existing.status !== "draft") {
+  if (existing && existing.status !== "draft" && existing.status !== "rejected") {
     return fail(existing.status === "submitted" ? "Your declaration is with HR. Recall it to make changes." : `Your declaration is ${existing.status}; contact HR to reopen it.`);
   }
 
@@ -148,7 +148,7 @@ export async function saveFbp(_prev: ActionState, fd: FormData): Promise<ActionS
     submitted_at: submit ? new Date().toISOString() : null,
   };
   const { error } = existing
-    ? await supabase.from("fbp_declarations").update(values).eq("id", existing.id).eq("status", "draft")
+    ? await supabase.from("fbp_declarations").update(values).eq("id", existing.id).in("status", ["draft", "rejected"])
     : await supabase.from("fbp_declarations").insert({ ...values, employee_id: me.id, financial_year: fy });
   if (error) return fail(dbError(error));
   revalidatePath("/payroll/fbp");
@@ -220,7 +220,7 @@ export async function saveInvestments(_prev: ActionState, fd: FormData): Promise
     .eq("employee_id", me.id)
     .eq("financial_year", fy)
     .maybeSingle();
-  if (existing && existing.status !== "draft") {
+  if (existing && existing.status !== "draft" && existing.status !== "rejected") {
     return fail(existing.status === "submitted" ? "Your declaration is with HR. Recall it to make changes." : `Your declaration is ${existing.status}; contact HR to reopen it.`);
   }
 
@@ -231,13 +231,44 @@ export async function saveInvestments(_prev: ActionState, fd: FormData): Promise
     submitted_at: submit ? new Date().toISOString() : null,
   };
   const { error } = existing
-    ? await supabase.from("investment_declarations").update(values).eq("id", existing.id).eq("status", "draft")
+    ? await supabase.from("investment_declarations").update(values).eq("id", existing.id).in("status", ["draft", "rejected"])
     : await supabase.from("investment_declarations").insert({ ...values, employee_id: me.id, financial_year: fy });
   if (error) return fail(dbError(error));
   revalidatePath("/payroll/investments");
   revalidatePath("/payroll/tax-calculator");
   revalidatePath("/payroll/admin");
   return ok(submit ? "Investment declaration submitted to HR" : "Draft saved");
+}
+
+/** Choose the tax regime for this financial year (from the Tax Calculator) without touching the declared amounts. */
+export async function saveTaxRegime(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await context();
+  if (!ctx) return fail("Not signed in");
+  const { me, supabase } = ctx;
+  const regime = str(fd, "regime");
+  if (!isRegime(regime)) return fail("Choose a tax regime");
+  const fy = financialYear(orgToday());
+  const label = regime === "new" ? "New" : "Old";
+
+  const { data: existing } = await supabase.from("investment_declarations").select("id, status, regime").eq("employee_id", me.id).eq("financial_year", fy).maybeSingle();
+  if (existing?.regime === regime && existing.status !== "rejected") return ok(`${label} regime is already your choice for FY ${fy}`);
+  if (existing?.status === "submitted") return fail("Your investment declaration is with HR. Recall it on Investment Details to change your regime.");
+  if (existing?.status === "approved") return fail(`HR has approved your declaration for FY ${fy}, so your regime is locked. Ask HR to reopen it.`);
+
+  const { error } = existing
+    ? await supabase.from("investment_declarations").update({ regime, status: "draft", submitted_at: null }).eq("id", existing.id).in("status", ["draft", "rejected"])
+    : await supabase.from("investment_declarations").insert({
+        employee_id: me.id,
+        financial_year: fy,
+        regime,
+        status: "draft",
+        items: INVESTMENT_ITEMS.map((d) => ({ code: d.code, section: d.section, label: d.label, declared: 0, proof_amount: 0 })),
+      });
+  if (error) return fail(dbError(error));
+  revalidatePath("/payroll/investments");
+  revalidatePath("/payroll/tax-calculator");
+  revalidatePath("/payroll/admin");
+  return ok(`${label} regime saved for FY ${fy}. Submit your investment declaration so HR applies it to your TDS.`);
 }
 
 export async function recallInvestments(_prev: ActionState, fd: FormData): Promise<ActionState> {

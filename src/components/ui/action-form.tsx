@@ -40,6 +40,8 @@ export function ActionForm({
   const dialog = useDialog();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
+  // Blocks a second submit (double-click, Enter + click) that lands before the button re-renders as disabled.
+  const busy = useRef(false);
 
   return (
     <PendingContext.Provider value={pending}>
@@ -49,6 +51,8 @@ export function ActionForm({
         className={className}
         onSubmit={(e) => {
           e.preventDefault();
+          if (busy.current) return;
+          busy.current = true;
           const form = e.currentTarget;
           // Include the clicked submit button's name/value (e.g. intent=draft|submit).
           const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
@@ -60,6 +64,8 @@ export function ActionForm({
             } catch (err) {
               toast.error(err instanceof Error && err.message ? err.message : "Something went wrong");
               return;
+            } finally {
+              busy.current = false;
             }
             if (!state) return;
             if (state.ok) {

@@ -12,6 +12,12 @@ import {
   Contact,
   MoreHorizontal,
   ShieldCheck,
+  LayoutDashboard,
+  Clock,
+  Wallet,
+  GraduationCap,
+  FolderOpen,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -271,6 +277,134 @@ export const MODULES: NavModule[] = [
   },
 ];
 
+/**
+ * Admin console navigation, shown to HR admins and super admins instead of the
+ * employee self-service menu (see src/lib/portal-view.ts). Keys are prefixed
+ * "console." so favourites never collide with the employee menu.
+ */
+export const ADMIN_HOME = "/admin";
+
+export const ADMIN_MODULES: NavModule[] = [
+  {
+    key: "console.dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    href: ADMIN_HOME,
+    direct: true,
+    audience: "hr",
+    theme: t("bg-[#e0e7ff]", "hover:bg-[#cfd9fe]", "text-[#3730a3]", "bg-[#4f46e5]"),
+    items: [{ key: "console.dashboard", label: "Dashboard", href: ADMIN_HOME, noFavorite: true }],
+  },
+  {
+    key: "console.people",
+    label: "People",
+    icon: Users,
+    href: "/hris/employees",
+    audience: "hr",
+    theme: t("bg-[#dce5fa]", "hover:bg-[#c9d7f7]", "text-[#3753b8]", "bg-[#5b74d6]"),
+    items: [
+      { key: "console.employees", label: "Employees", href: "/hris/employees" },
+      { key: "console.add-employee", label: "Add Employee", href: "/hris/employees/new" },
+      { key: "console.onboarding", label: "Onboarding & Probation", href: "/hris/onboarding" },
+      { key: "console.onboarding-template", label: "Onboarding Checklist Template", href: "/hris/onboarding/template" },
+      { key: "console.exit", label: "Exit Management", href: "/exit/approvals" },
+      { key: "console.org-chart", label: "Organization Chart", href: "/hris/org-chart" },
+      { key: "console.directory", label: "Directory", href: "/directory" },
+      { key: "console.org", label: "Departments & Locations", href: "/admin/org" },
+      { key: "console.accounts", label: "User Accounts & Roles", href: "/admin/accounts", audience: "super" },
+    ],
+  },
+  {
+    key: "console.time",
+    label: "Time & Leave",
+    icon: Clock,
+    href: "/leave/approvals",
+    audience: "hr",
+    theme: t("bg-[#fbe2d2]", "hover:bg-[#f8d1b8]", "text-[#c2581c]", "bg-[#ec7a35]"),
+    items: [
+      { key: "console.leave-approvals", label: "Leave Approvals", href: "/leave/approvals" },
+      { key: "console.leave-admin", label: "Leave Types, Balances & Holidays", href: "/leave/admin" },
+      { key: "console.holidays", label: "Holiday Calendar", href: "/leave/holidays" },
+      { key: "console.attendance-team", label: "Attendance Status", href: "/attendance/team" },
+      { key: "console.attendance-approvals", label: "Regularization & Comp-off Approvals", href: "/attendance/bulk-approval" },
+      { key: "console.remote-report", label: "Remote Attendance Report", href: "/attendance/remote/team" },
+    ],
+  },
+  {
+    key: "console.money",
+    label: "Payroll & Expenses",
+    icon: Wallet,
+    href: "/payroll/admin",
+    audience: "hr",
+    theme: t("bg-[#e2eed4]", "hover:bg-[#d3e5bf]", "text-[#4f7a1f]", "bg-[#78a83a]"),
+    items: [
+      { key: "console.payroll", label: "Payroll Run, Salary & Declarations", href: "/payroll/admin" },
+      { key: "console.claims", label: "Claim Approvals", href: "/reimbursement/approvals" },
+    ],
+  },
+  {
+    key: "console.performance",
+    label: "Performance",
+    icon: Target,
+    href: "/performance/admin",
+    audience: "hr",
+    theme: t("bg-[#d9e7f5]", "hover:bg-[#c5dbf0]", "text-[#2f6aa8]", "bg-[#4a8ad0]"),
+    items: [
+      { key: "console.review-cycles", label: "Review Cycles", href: "/performance/admin" },
+      { key: "console.reviews", label: "Employee Reviews", href: "/performance/team-reviews?scope=all" },
+      { key: "console.goals", label: "Employee Goals & Approvals", href: "/performance/team-goals?scope=all" },
+      { key: "console.objective-tree", label: "Objective Tree", href: "/performance/objective-tree" },
+    ],
+  },
+  {
+    key: "console.talent",
+    label: "Recruitment & Learning",
+    icon: GraduationCap,
+    href: "/recruit/admin",
+    audience: "hr",
+    theme: t("bg-[#e6e0f1]", "hover:bg-[#dad1ec]", "text-[#6a4fa3]", "bg-[#8a6cc6]"),
+    items: [
+      { key: "console.recruit", label: "Jobs & Candidates", href: "/recruit/admin" },
+      { key: "console.learning", label: "Courses & Learning Paths", href: "/learning/admin" },
+      { key: "console.training-approvals", label: "External Training Approvals", href: "/learning/external/approvals" },
+      { key: "console.training-calendar", label: "Training Calendar", href: "/learning/calendar" },
+    ],
+  },
+  {
+    key: "console.documents",
+    label: "Documents & Forms",
+    icon: FolderOpen,
+    href: "/hris/admin/letters",
+    audience: "hr",
+    theme: t("bg-[#f8ebc8]", "hover:bg-[#f4e0aa]", "text-[#a87a0c]", "bg-[#e3a91a]"),
+    items: [
+      { key: "console.letters", label: "Letters & Contracts", href: "/hris/admin/letters" },
+      { key: "console.policies", label: "Policies & FAQs", href: "/hris/admin/policies" },
+      { key: "console.declarations", label: "Declaration Forms", href: "/apps/declarations/admin" },
+    ],
+  },
+  {
+    key: "console.settings",
+    label: "Communication & Settings",
+    icon: Settings2,
+    href: "/admin/announcements",
+    audience: "hr",
+    theme: t("bg-[#eef1f6]", "hover:bg-[#e2e7ef]", "text-[#475569]", "bg-[#64748b]"),
+    items: [
+      { key: "console.announcements", label: "Announcements", href: "/admin/announcements" },
+      { key: "console.addons", label: "Add-ons", href: "/admin/addons" },
+      { key: "console.helpdesk", label: SERVICE_DESK_URL ? "Service Desk" : "Helpdesk Queue", href: "/apps/helpdesk/queue" },
+    ],
+  },
+];
+
+/** "admin" = admin console menu, "self" = the employee menu everyone sees. */
+export type PortalMode = "admin" | "self";
+
+export function modulesFor(mode: PortalMode) {
+  return mode === "admin" ? ADMIN_MODULES : MODULES;
+}
+
 export type Viewer = { isManager: boolean; isHR: boolean; isSuperAdmin?: boolean };
 
 export function canSee(audience: Audience | undefined, v: Viewer) {
@@ -281,14 +415,18 @@ export function canSee(audience: Audience | undefined, v: Viewer) {
 }
 
 /** Modules filtered to what this viewer can access. Serializable keys only. */
-export function visibleModuleKeys(v: Viewer) {
-  return MODULES.filter((m) => canSee(m.audience, v)).map((m) => m.key);
+export function visibleModuleKeys(v: Viewer, mode: PortalMode = "self") {
+  return modulesFor(mode).filter((m) => canSee(m.audience, v)).map((m) => m.key);
 }
 
-/** Flat list of every leaf, with its module — used by search and favourites. */
-export function allLeaves(v?: Viewer) {
+/**
+ * Flat list of every leaf, with its module — used by search and favourites.
+ * Without a mode it covers both menus (so a favourite from either is valid).
+ */
+export function allLeaves(v?: Viewer, mode?: PortalMode) {
   const out: (NavLeaf & { moduleKey: string; moduleLabel: string })[] = [];
-  for (const m of MODULES) {
+  const source = mode ? modulesFor(mode) : [...MODULES, ...ADMIN_MODULES];
+  for (const m of source) {
     if (v && !canSee(m.audience, v)) continue;
     for (const item of m.items) {
       if (isGroup(item)) {
@@ -311,5 +449,5 @@ export function findLeaf(key: string) {
 }
 
 export function moduleFor(key: string) {
-  return MODULES.find((m) => m.key === key);
+  return MODULES.find((m) => m.key === key) ?? ADMIN_MODULES.find((m) => m.key === key);
 }

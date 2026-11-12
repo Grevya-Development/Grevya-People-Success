@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { ChevronRight, ChevronsLeft, ChevronsRight, Heart, Home, LogOut, Settings, User, X, ExternalLink, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronsLeft, ChevronsRight, Heart, Home, LayoutDashboard, LogOut, Settings, User, X, ExternalLink, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { MODULES, canSee, isGroup, type NavGroup, type NavLeaf, type NavModule, type Viewer } from "@/lib/nav";
+import { ADMIN_HOME, canSee, isGroup, modulesFor, type NavGroup, type NavLeaf, type NavModule, type PortalMode, type Viewer } from "@/lib/nav";
+import { ViewSwitch } from "./view-switch";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
 import { toggleFavorite, signOut } from "@/app/(portal)/_actions";
@@ -42,17 +43,21 @@ function useIsDesktop() {
   return desktop;
 }
 
+/** A nav href without its query string (e.g. "/performance/team-goals?scope=all"). */
+const pathOf = (href: string) => href.split("?")[0];
+
 function moduleMatches(m: NavModule, pathname: string) {
   const hrefs: string[] = [m.href];
   for (const i of m.items) {
     if (isGroup(i)) i.children.forEach((c) => hrefs.push(c.href));
     else hrefs.push(i.href);
   }
-  return hrefs.some((h) => pathname === h || pathname.startsWith(h + "/"));
+  return hrefs.map(pathOf).some((h) => pathname === h || pathname.startsWith(h + "/"));
 }
 
 export function Sidebar({
   viewer,
+  mode,
   user,
   favorites: initialFavorites,
   addons,
@@ -62,6 +67,7 @@ export function Sidebar({
   onMobileClose,
 }: {
   viewer: Viewer;
+  mode: PortalMode;
   user: ShellUser;
   favorites: string[];
   addons: ShellAddon[];
@@ -93,7 +99,11 @@ export function Sidebar({
     setGroup(null);
   }
 
-  const modules = MODULES.filter((m) => canSee(m.audience, viewer));
+  // The admin console's Dashboard takes the place of Home at the top of the menu.
+  const modules = modulesFor(mode).filter((m) => canSee(m.audience, viewer) && m.href !== ADMIN_HOME);
+  const homeHref = mode === "admin" ? ADMIN_HOME : "/home";
+  const HomeIcon = mode === "admin" ? LayoutDashboard : Home;
+  const homeLabel = mode === "admin" ? "Dashboard" : "Home";
   const activeModule = modules.find((m) => moduleMatches(m, pathname))?.key;
 
   const cancelClose = () => {
@@ -215,7 +225,7 @@ export function Sidebar({
 
           {/* Home */}
           <Link
-            href="/home"
+            href={homeHref}
             onMouseEnter={() =>
               deferIfOpen(() => {
                 setFlyout(null);
@@ -224,14 +234,15 @@ export function Sidebar({
             }
             className={cn(
               "mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-bold transition-colors hover:bg-white/10",
-              pathname === "/home" && "bg-white/10",
+              pathname === homeHref && "bg-white/10",
               !showLabels && "justify-center px-0",
             )}
-            title="Home"
+            title={homeLabel}
           >
-            <Home className="h-6 w-6 shrink-0" strokeWidth={1.75} />
-            {showLabels && <span>Home</span>}
+            <HomeIcon className="h-6 w-6 shrink-0" strokeWidth={1.75} />
+            {showLabels && <span>{homeLabel}</span>}
           </Link>
+          {mode === "admin" && showLabels && <p className="mx-6 mt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">Admin console</p>}
           <div className="mx-5 my-3 h-px bg-white/40" />
 
           {/* Modules */}
@@ -254,7 +265,7 @@ export function Sidebar({
                       <Icon className="h-[22px] w-[22px] shrink-0 opacity-90" strokeWidth={1.6} />
                       {showLabels && <span className="flex-1 truncate">{m.label}</span>}
                     </Link>
-                    {showLabels && (
+                    {showLabels && !(m.items[0] as NavLeaf).noFavorite && (
                       <button
                         type="button"
                         onClick={() => onToggleFavorite(m.items[0].key)}
@@ -342,7 +353,7 @@ export function Sidebar({
                   <Avatar name={user.name} src={user.avatarUrl} size="sm" />
                   <span className="truncate text-sm">{user.name}</span>
                 </div>
-                <UserLinks dark />
+                <UserLinks dark viewer={viewer} mode={mode} />
               </div>
             )}
             {showLabels && (
@@ -384,7 +395,7 @@ export function Sidebar({
         )}
         {desktop && flyout?.kind === "user" && (
           <FlyoutPanel left={width + 10} anchorTop={flyout.top} title={user.name} onEnter={onFlyoutEnter} width={300}>
-            <UserLinks />
+            <UserLinks viewer={viewer} mode={mode} />
           </FlyoutPanel>
         )}
       </div>
@@ -441,7 +452,7 @@ function Pill({
   onToggleFavorite: (key: string) => void;
 }) {
   const pathname = usePathname();
-  const active = pathname === leaf.href;
+  const active = pathname === pathOf(leaf.href);
   return (
     <div className={cn("group relative flex items-center rounded-lg transition-colors", theme.pill, theme.pillHover, active && "ring-2 ring-inset ring-primary-500/40")}>
       <Link href={leaf.href} className="flex-1 truncate px-4 py-2.5 text-[15px] text-slate-700">
@@ -617,7 +628,7 @@ function MobileItems({ module: m, viewer, addons }: { module: NavModule; viewer:
   );
 }
 
-function UserLinks({ dark = false }: { dark?: boolean }) {
+function UserLinks({ dark = false, viewer, mode }: { dark?: boolean; viewer: Viewer; mode: PortalMode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const cls = dark
@@ -625,6 +636,7 @@ function UserLinks({ dark = false }: { dark?: boolean }) {
     : "flex w-full items-center gap-3 rounded-lg bg-[#f7e3e1] px-4 py-2.5 text-[15px] text-slate-700 hover:bg-[#f2d2ce]";
   return (
     <div className="space-y-2">
+      {viewer.isHR && <ViewSwitch mode={mode} variant={dark ? "menu-dark" : "menu"} />}
       <button type="button" className={cls} onClick={() => router.push("/profile")}>
         <User className="h-[18px] w-[18px] opacity-70" /> My Profile
       </button>

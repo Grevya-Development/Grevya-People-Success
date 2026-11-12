@@ -5,7 +5,7 @@ import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ok, fail, dbError, type ActionState } from "@/lib/actions";
 import { str, num, bool, orgToday } from "@/lib/utils";
-import { addDays, computeLeaveDays, diffDays, fmtNum, isISODate } from "./_lib/dates";
+import { addDays, computeLeaveDays, dateRange, diffDays, fmtNum, isISODate } from "./_lib/dates";
 import { getHolidays } from "./_lib/data";
 import { proratedQuota } from "@/lib/leave-proration";
 
@@ -61,7 +61,7 @@ export async function applyLeave(_prev: ActionState, fd: FormData): Promise<Acti
   // Overlap with my pending / approved leave
   const { data: overlaps, error: ovErr } = await supabase
     .from("leave_requests")
-    .select("id, start_date, end_date, half_day, half_day_session")
+    .select("id, start_date, end_date, half_day, half_day_session, status, leave_type:leave_types(name)")
     .eq("employee_id", me.id)
     .in("status", ["pending", "approved"])
     .lte("start_date", end)
@@ -70,7 +70,13 @@ export async function applyLeave(_prev: ActionState, fd: FormData): Promise<Acti
   const clash = (overlaps ?? []).find(
     (o) => !(halfDay && o.half_day && o.start_date === start && o.end_date === end && o.half_day_session !== session),
   );
-  if (clash) return fail("You already have a leave request overlapping these dates");
+  if (clash) {
+    const name = (clash.leave_type as { name: string } | null)?.name ?? "leave";
+    const when = dateRange(clash.start_date, clash.end_date);
+    return fail(
+      `These dates overlap your ${name} on ${when} (${clash.status === "approved" ? "approved" : "waiting for approval"}). Cancel it in My leave history, or pick other dates.`,
+    );
+  }
 
   // Balance (unpaid types such as LOP are not limited)
   if (type.is_paid) {

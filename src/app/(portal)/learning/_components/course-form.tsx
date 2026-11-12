@@ -66,8 +66,13 @@ export function CourseForm({
             <option value="advanced">Advanced</option>
           </Select>
         </Field>
-        <Field label="Duration (hours)" hint={totalMinutes > 0 ? `Modules add up to ${(totalMinutes / 60).toFixed(1)}h — leave blank to use that` : undefined}>
-          <Input name="duration_hours" type="number" min={0.1} step={0.1} defaultValue={course ? Number(course.duration_hours) : ""} />
+        <Field
+          label="Duration (hours)"
+          required={totalMinutes === 0}
+          hint={totalMinutes > 0 ? `Modules add up to ${(totalMinutes / 60).toFixed(1)}h — leave blank to use that` : "Or add modules below and leave this blank"}
+        >
+          {/* Without modules the server needs a duration, so ask for it up front. */}
+          <Input name="duration_hours" type="number" min={0.1} step={0.1} required={totalMinutes === 0} defaultValue={course ? Number(course.duration_hours) : ""} />
         </Field>
         <Field label="Content URL" className="sm:col-span-2" hint="Link to the course material (LMS, video, document)">
           <Input name="content_url" type="url" defaultValue={course?.content_url ?? ""} placeholder="https://" />

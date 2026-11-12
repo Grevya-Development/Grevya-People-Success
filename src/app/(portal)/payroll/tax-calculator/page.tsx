@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { financialYear, orgToday } from "@/lib/utils";
 import { TaxCalculator, type TaxCalcDefaults } from "../_components/tax-calculator";
-import { INVESTMENT_ITEMS, annualEpf, annualGross, parseInvestmentItems, toNum } from "../_lib/payroll";
+import { INVESTMENT_ITEMS, annualEpf, annualGross, isRegime, parseInvestmentItems, toNum } from "../_lib/payroll";
 
 export const metadata = { title: "Tax Calculator" };
 
@@ -14,7 +14,7 @@ export default async function TaxCalculatorPage() {
 
   const [{ data: s }, { data: inv }] = await Promise.all([
     supabase.from("salary_structures").select("*").eq("employee_id", me.id).eq("is_current", true).maybeSingle(),
-    supabase.from("investment_declarations").select("items").eq("employee_id", me.id).eq("financial_year", fy).maybeSingle(),
+    supabase.from("investment_declarations").select("items, regime, status").eq("employee_id", me.id).eq("financial_year", fy).maybeSingle(),
   ]);
 
   const items = parseInvestmentItems(inv?.items);
@@ -43,10 +43,21 @@ export default async function TaxCalculatorPage() {
     <div>
       <PageHeader
         title="Tax Calculator"
-        description={`Compare the old and new tax regimes for FY ${fy}. Changes here are not saved.`}
+        description={`Compare the old and new tax regimes for FY ${fy} and choose yours. The amounts you try here are not saved.`}
         breadcrumbs={[{ label: "Payroll", href: "/payroll/slips" }, { label: "Tax Calculator" }]}
       />
-      <TaxCalculator defaults={defaults} source={source} />
+      <TaxCalculator
+        defaults={defaults}
+        source={source}
+        savedRegime={inv && isRegime(inv.regime) ? inv.regime : null}
+        lockReason={
+          inv?.status === "submitted"
+            ? "Your investment declaration is with HR. Recall it to change your regime:"
+            : inv?.status === "approved"
+              ? `HR has approved your declaration for FY ${fy}, so your regime is locked. Ask HR to reopen it to change it:`
+              : null
+        }
+      />
     </div>
   );
 }

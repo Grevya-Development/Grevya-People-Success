@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Search, Loader2, LayoutGrid } from "lucide-react";
-import { allLeaves, moduleFor, type Viewer } from "@/lib/nav";
+import { allLeaves, moduleFor, type PortalMode, type Viewer } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
 import { searchEmployees, type EmployeeHit } from "@/app/(portal)/_actions";
 
 type Result = { kind: "module"; key: string; label: string; sub: string; href: string } | { kind: "employee"; hit: EmployeeHit; href: string };
 
-export function GlobalSearch({ viewer }: { viewer: Viewer }) {
+export function GlobalSearch({ viewer, mode = "self" }: { viewer: Viewer; mode?: PortalMode }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -21,7 +21,7 @@ export function GlobalSearch({ viewer }: { viewer: Viewer }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const leaves = useMemo(() => allLeaves(viewer), [viewer]);
+  const leaves = useMemo(() => allLeaves(viewer, mode), [viewer, mode]);
 
   const moduleHits = useMemo(() => {
     const term = q.trim().toLowerCase();

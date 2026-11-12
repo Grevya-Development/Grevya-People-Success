@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
-import type { Viewer } from "@/lib/nav";
+import { ADMIN_HOME, type PortalMode, type Viewer } from "@/lib/nav";
+import { ViewSwitch } from "./view-switch";
 import { Avatar } from "@/components/ui/avatar";
 import { Sidebar, SIDEBAR_WIDTHS, type ShellAddon, type ShellUser } from "./sidebar";
 import { GlobalSearch } from "./search";
@@ -14,6 +15,7 @@ import { AlertsMenu, TasksMenu, type AnnouncementItem, type NotificationItem, ty
 
 export function PortalShell({
   viewer,
+  mode,
   user,
   favorites,
   addons,
@@ -25,6 +27,7 @@ export function PortalShell({
   children,
 }: {
   viewer: Viewer;
+  mode: PortalMode;
   user: ShellUser;
   favorites: string[];
   addons: ShellAddon[];
@@ -57,7 +60,7 @@ export function PortalShell({
         <button type="button" onClick={() => setMobileOpen(true)} className="rounded-md p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
           <Menu className="h-5 w-5" />
         </button>
-        <Link href="/home" className="flex shrink-0 items-center gap-2.5 lg:w-[calc(var(--sidebar-w)-12px)] lg:pl-3">
+        <Link href={mode === "admin" ? ADMIN_HOME : "/home"} className="flex shrink-0 items-center gap-2.5 lg:w-[calc(var(--sidebar-w)-12px)] lg:pl-3">
           {collapsed ? (
             <Image src="/grevya-mark.png" alt="Grevya" width={36} height={36} className="hidden h-9 w-9 lg:block" priority />
           ) : null}
@@ -74,11 +77,21 @@ export function PortalShell({
             <br />
             Success
           </span>
+          {mode === "admin" && (
+            <span className={collapsed ? "hidden" : "hidden rounded-md bg-primary-600 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white md:inline-block"}>
+              Admin
+            </span>
+          )}
         </Link>
         <div className="flex min-w-0 flex-1 justify-center px-1">
-          <GlobalSearch viewer={viewer} />
+          <GlobalSearch viewer={viewer} mode={mode} />
         </div>
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          {viewer.isHR && (
+            <div className="mr-1 hidden xl:block">
+              <ViewSwitch mode={mode} variant="header" />
+            </div>
+          )}
           <TasksMenu tasks={tasks} />
           <AlertsMenu items={notifications} unread={unread} announcements={announcements} />
           <Link href="/profile" className="ml-1 hidden sm:block" title={user.name}>
@@ -90,6 +103,7 @@ export function PortalShell({
       <div className="no-print">
         <Sidebar
           viewer={viewer}
+          mode={mode}
           user={user}
           favorites={favorites}
           addons={addons}

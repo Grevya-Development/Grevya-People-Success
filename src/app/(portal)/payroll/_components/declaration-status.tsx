@@ -8,7 +8,7 @@ const COPY: Record<string, { title: string; body: string; icon: typeof Clock; to
   draft: { title: "Draft", body: "Your declaration is saved but not yet submitted to HR.", icon: FilePen, tone: "bg-slate-50 ring-slate-200 text-slate-700" },
   submitted: { title: "Submitted — awaiting HR review", body: "You can recall it if you need to make changes.", icon: Clock, tone: "bg-blue-50 ring-blue-200 text-blue-800" },
   approved: { title: "Approved", body: "Your declaration has been approved by HR. Contact HR if you need to revise it.", icon: CheckCircle2, tone: "bg-emerald-50 ring-emerald-200 text-emerald-800" },
-  rejected: { title: "Rejected", body: "HR has rejected this declaration. Contact HR to reopen it for changes.", icon: XCircle, tone: "bg-red-50 ring-red-200 text-red-800" },
+  rejected: { title: "Rejected", body: "HR has sent this declaration back. Read their remarks, correct it below and submit it again.", icon: XCircle, tone: "bg-red-50 ring-red-200 text-red-800" },
 };
 
 /** Status banner for FBP / investment declarations, with HR remarks. */

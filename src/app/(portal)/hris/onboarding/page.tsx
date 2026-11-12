@@ -187,7 +187,7 @@ export default async function HROnboardingPage({ searchParams }: { searchParams:
                           <Link href={`/onboarding/${e.id}`} className={buttonClass("ghost", "sm")}>
                             Extend
                           </Link>
-                          <Link href={`/hris/admin/letters?tab=issue&employee=${e.id}`} className={buttonClass("outline", "sm")}>
+                          <Link href={`/hris/admin/letters?tab=issue&employee=${e.id}&type=confirmation`} className={buttonClass("outline", "sm")}>
                             Confirm
                           </Link>
                         </div>

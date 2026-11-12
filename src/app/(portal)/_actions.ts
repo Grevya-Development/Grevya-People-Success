@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { allLeaves } from "@/lib/nav";
+import { cookies } from "next/headers";
+import { ADMIN_HOME, allLeaves } from "@/lib/nav";
+import { VIEW_COOKIE } from "@/lib/portal-view";
 
 export async function toggleFavorite(key: string): Promise<{ ok: boolean; favorite?: boolean; error?: string }> {
   const me = await getCurrentEmployee();
@@ -76,4 +78,15 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/** Switch an HR admin between the admin console and their own workspace. */
+export async function switchPortalView(view: "admin" | "self") {
+  const me = await getCurrentEmployee();
+  if (!me) redirect("/login");
+  const jar = await cookies();
+  if (!me.isHR || view === "admin") jar.delete(VIEW_COOKIE);
+  else jar.set(VIEW_COOKIE, "self", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+  revalidatePath("/", "layout");
+  redirect(me.isHR && view === "admin" ? ADMIN_HOME : "/home");
 }

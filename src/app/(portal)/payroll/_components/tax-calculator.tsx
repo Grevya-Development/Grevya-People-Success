@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeCheck, Calculator, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, Calculator, Check, Lock, RotateCcw } from "lucide-react";
+import { ActionForm, SubmitButton } from "@/components/ui/action-form";
+import { saveTaxRegime } from "../actions";
 import { Button, Card, CardBody, CardHeader, Checkbox, Field, Input } from "@/components/ui";
 import { cn, formatCurrency } from "@/lib/utils";
 import { DEDUCTION_LIMITS, PROFESSIONAL_TAX_MONTHLY, compareRegimes, hraExemption, type Regime, type TaxResult } from "../_lib/tax";
@@ -32,7 +35,19 @@ const pct = (r: number) => `${Math.round(r * 100)}%`;
 const slabLabel = (from: number, to: number | null) =>
   to === null ? `Above ${formatCurrency(from)}` : `${formatCurrency(from)} – ${formatCurrency(to)}`;
 
-export function TaxCalculator({ defaults, source }: { defaults: TaxCalcDefaults; source: string[] }) {
+export function TaxCalculator({
+  defaults,
+  source,
+  savedRegime,
+  lockReason,
+}: {
+  defaults: TaxCalcDefaults;
+  source: string[];
+  /** The regime on this year's investment declaration (null = not chosen yet). */
+  savedRegime: Regime | null;
+  /** Why the regime can't be changed right now (declaration with HR or approved). */
+  lockReason: string | null;
+}) {
   const init = () => Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, typeof v === "number" ? (v ? String(Math.round(v)) : "") : v])) as Record<Key, string> & { metro: boolean };
   const [v, setV] = useState(init);
   const set = (k: Key) => (e: React.ChangeEvent<HTMLInputElement>) => setV((s) => ({ ...s, [k]: e.target.value }));
@@ -60,7 +75,9 @@ export function TaxCalculator({ defaults, source }: { defaults: TaxCalcDefaults;
       }),
     [v, hra.exemption],
   );
-  const best = cmp[cmp.recommended];
+  const [chosen, setChosen] = useState<Regime | null>(savedRegime);
+  const shown = chosen ?? cmp.recommended;
+  const result = cmp[shown];
 
   const num = (k: Key, label: string, hint?: string, cap?: number) => (
     <Field label={label} htmlFor={`tc-${k}`} hint={cap && n(v[k]) > cap ? <span className="text-amber-600">Capped at {formatCurrency(cap)}</span> : hint}>
@@ -137,29 +154,106 @@ export function TaxCalculator({ defaults, source }: { defaults: TaxCalcDefaults;
                 <BadgeCheck className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-white/80">Recommended</p>
-                <p className="text-xl font-semibold">{cmp.recommended === "new" ? "New" : "Old"} tax regime</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-white/80">
+                  {chosen ? (chosen === savedRegime ? "Your regime" : "Selected regime") : "Recommended"}
+                </p>
+                <p className="text-xl font-semibold">{shown === "new" ? "New" : "Old"} tax regime</p>
                 <p className="text-sm text-white/90">
-                  {cmp.savings > 0 ? `Saves ${formatCurrency(cmp.savings)} a year over the ${cmp.recommended === "new" ? "old" : "new"} regime` : "Both regimes result in the same tax"}
+                  {cmp.savings === 0
+                    ? "Both regimes result in the same tax"
+                    : shown === cmp.recommended
+                      ? `Saves ${formatCurrency(cmp.savings)} a year over the ${shown === "new" ? "old" : "new"} regime`
+                      : `Costs ${formatCurrency(cmp.savings)} more a year than the ${cmp.recommended} regime`}
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 sm:text-right">
               <div>
                 <p className="text-xs text-white/80">Annual tax</p>
-                <p className="text-lg font-semibold tabular-nums">{formatCurrency(best.totalTax)}</p>
+                <p className="text-lg font-semibold tabular-nums">{formatCurrency(result.totalTax)}</p>
               </div>
               <div>
                 <p className="text-xs text-white/80">Monthly TDS</p>
-                <p className="text-lg font-semibold tabular-nums">{formatCurrency(best.monthlyTax)}</p>
+                <p className="text-lg font-semibold tabular-nums">{formatCurrency(result.monthlyTax)}</p>
               </div>
             </div>
           </div>
         </Card>
 
+        <Card>
+          <CardHeader
+            title="Choose your tax regime"
+            description="Your choice is used for TDS on your salary this financial year, once HR approves your investment declaration."
+          />
+          <CardBody>
+            <ActionForm action={saveTaxRegime} resetOnSuccess={false}>
+              <div role="radiogroup" aria-label="Tax regime" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(["new", "old"] as Regime[]).map((r) => (
+                  <label
+                    key={r}
+                    className={cn(
+                      "relative flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition",
+                      shown === r ? "border-[#78a83a] bg-[#f3f8ec] ring-1 ring-[#78a83a]" : "border-slate-200 hover:bg-slate-50",
+                      lockReason && "cursor-default",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="regime"
+                      value={r}
+                      checked={shown === r}
+                      onChange={() => setChosen(r)}
+                      className="mt-1 accent-[#78a83a]"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800">
+                        {r === "new" ? "New regime" : "Old regime"}
+                        {cmp.recommended === r && cmp.savings > 0 && (
+                          <span className="rounded-full bg-[#e2eed4] px-2 py-0.5 text-[11px] font-semibold text-[#4f7a1f]">Lower tax</span>
+                        )}
+                        {savedRegime === r && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                            <Check className="h-3 w-3" /> Saved
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500">{r === "new" ? "Lower slabs, standard deduction only" : "Allows HRA, 80C, 80D and other deductions"}</span>
+                      <span className="mt-2 block text-sm tabular-nums text-slate-700">
+                        {formatCurrency(cmp[r].totalTax)} a year · {formatCurrency(cmp[r].monthlyTax)} a month
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {lockReason ? (
+                  <p className="flex items-start gap-1.5 text-xs text-slate-500">
+                    <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      {lockReason}{" "}
+                      <Link href="/payroll/investments" className="font-medium text-[#4f7a1f] underline">
+                        Investment Details
+                      </Link>
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    {savedRegime ? `Saved: ${savedRegime === "new" ? "New" : "Old"} regime.` : "You haven't chosen a regime yet; payroll uses the new regime by default."}
+                  </p>
+                )}
+                {!lockReason && (
+                  <SubmitButton disabled={shown === savedRegime} className="shrink-0">
+                    Save {shown === "new" ? "new" : "old"} regime
+                  </SubmitButton>
+                )}
+              </div>
+            </ActionForm>
+          </CardBody>
+        </Card>
+
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {(["new", "old"] as Regime[]).map((r) => (
-            <RegimeCard key={r} result={cmp[r]} recommended={cmp.recommended === r} />
+            <RegimeCard key={r} result={cmp[r]} recommended={cmp.recommended === r} selected={shown === r} />
           ))}
         </div>
         <p className="flex items-start gap-1.5 text-xs text-slate-500">
@@ -172,7 +266,7 @@ export function TaxCalculator({ defaults, source }: { defaults: TaxCalcDefaults;
   );
 }
 
-function RegimeCard({ result: r, recommended }: { result: TaxResult; recommended: boolean }) {
+function RegimeCard({ result: r, recommended, selected }: { result: TaxResult; recommended: boolean; selected: boolean }) {
   const line = (label: string, value: number, opts: { strong?: boolean; minus?: boolean; muted?: boolean } = {}) => (
     <div className={cn("flex justify-between gap-3 py-1 text-sm", opts.strong ? "font-semibold text-slate-900" : opts.muted ? "text-slate-500" : "text-slate-700")}>
       <span>{label}</span>
@@ -183,7 +277,7 @@ function RegimeCard({ result: r, recommended }: { result: TaxResult; recommended
     </div>
   );
   return (
-    <Card className={cn(recommended && "ring-2 ring-[#78a83a]")}>
+    <Card className={cn(selected && "ring-2 ring-[#78a83a]")}>
       <CardHeader
         title={r.regime === "new" ? "New regime" : "Old regime"}
         description={r.regime === "new" ? "Lower slabs, ₹75,000 standard deduction only" : "Exemptions & Chapter VI-A deductions"}

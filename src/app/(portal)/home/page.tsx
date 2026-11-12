@@ -11,6 +11,9 @@ import { PunchCard } from "../attendance/_components/punch-card";
 import { AttendanceWidget, type DayRow } from "./_components/attendance-widget";
 import { OnboardingBanner } from "./_components/onboarding-banner";
 import { SERVICE_DESK_URL } from "@/lib/service-desk";
+import { redirect } from "next/navigation";
+import { portalMode } from "@/lib/portal-view";
+import { ADMIN_HOME } from "@/lib/nav";
 
 export const metadata = { title: "Home" };
 
@@ -18,7 +21,9 @@ const SUGGESTED = ["leave.apply", "attendance.my", "attendance.remote", "reimbur
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const me = await requireEmployee();
+  // HR admins land in the admin console unless they switched to their own workspace.
   const sp = await searchParams;
+  if ((await portalMode(me)) === "admin") redirect(sp.denied ? `${ADMIN_HOME}?denied=1` : ADMIN_HOME);
   const supabase = await createClient();
   const today = orgToday();
   const year = Number(today.slice(0, 4));

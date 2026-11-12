@@ -156,7 +156,7 @@ export default async function OnboardingDetailPage({ params }: { params: Promise
                 <p className="text-slate-500">No probation.</p>
               )}
               {viewer.isHR && onProbation && (
-                <Link href={`/hris/admin/letters?tab=issue&employee=${emp.id}`} className={buttonClass("primary", "sm", "w-full")}>
+                <Link href={`/hris/admin/letters?tab=issue&employee=${emp.id}&type=confirmation`} className={buttonClass("primary", "sm", "w-full")}>
                   Confirm: issue confirmation letter
                 </Link>
               )}

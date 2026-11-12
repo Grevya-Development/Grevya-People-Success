@@ -6,7 +6,7 @@ import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { applyLeave } from "../actions";
-import { computeLeaveDays, fmtDays, fmtNum, isISODate, shortDay, type HolidayLite } from "../_lib/dates";
+import { computeLeaveDays, dateRange, eachDay, fmtDays, fmtNum, isISODate, isWeekend, shortDay, type HolidayLite } from "../_lib/dates";
 
 export type ApplyType = {
   id: string;
@@ -19,7 +19,25 @@ export type ApplyType = {
   available: Record<string, number>;
 };
 
-export function ApplyLeaveForm({ types, holidays, today, minDate }: { types: ApplyType[]; holidays: HolidayLite[]; today: string; minDate: string }) {
+/** The employee's own pending / approved leave, so a clash is shown before they submit. */
+export type ExistingLeave = { start: string; end: string; status: string; type: string; halfDay: boolean; session: string | null };
+
+/** A date the user has finished typing (date inputs report partial years like 0002 while typing). */
+const complete = (v: string) => isISODate(v) && v >= "2000-01-01";
+
+export function ApplyLeaveForm({
+  types,
+  holidays,
+  today,
+  minDate,
+  existing = [],
+}: {
+  types: ApplyType[];
+  holidays: HolidayLite[];
+  today: string;
+  minDate: string;
+  existing?: ExistingLeave[];
+}) {
   const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
@@ -30,12 +48,20 @@ export function ApplyLeaveForm({ types, holidays, today, minDate }: { types: App
   const single = start === end;
   const canHalf = !!type?.allow_half_day && single;
   const effectiveHalf = halfDay && canHalf;
-  const valid = isISODate(start) && isISODate(end) && end >= start;
+  const valid = complete(start) && complete(end) && end >= start;
 
   const calc = useMemo(() => (valid ? computeLeaveDays(start, end, holidays, effectiveHalf) : null), [valid, start, end, holidays, effectiveHalf]);
   const year = start.slice(0, 4);
   const available = type ? (type.available[year] ?? 0) : 0;
   const insufficient = !!type?.is_paid && !!calc && calc.days > available;
+  // Same rule as the server: any overlap, except the other half of the same day.
+  const clashes = valid
+    ? existing.filter(
+        (o) => o.start <= end && o.end >= start && !(effectiveHalf && o.halfDay && o.start === start && o.end === end && o.session !== session),
+      )
+    : [];
+  const holidayByDate = useMemo(() => new Map(holidays.map((h) => [h.date, h.name])), [holidays]);
+  const dayList = valid && calc && calc.calendarDays <= 14 ? eachDay(start, end) : [];
 
   const reset = () => {
     setStart(today);
@@ -84,7 +110,8 @@ export function ApplyLeaveForm({ types, holidays, today, minDate }: { types: App
               onChange={(e) => {
                 const v = e.target.value;
                 setStart(v);
-                if (!end || end < v) setEnd(v);
+                // Only move "To" once a full date is in, not on every keystroke of the year.
+                if (complete(v) && (!complete(end) || end < v)) setEnd(v);
               }}
               required
             />
@@ -166,6 +193,24 @@ export function ApplyLeaveForm({ types, holidays, today, minDate }: { types: App
               ))}
             </ul>
           )}
+          {dayList.length > 1 && (
+            <ul className="mt-3 flex flex-wrap gap-1.5 text-xs">
+              {dayList.map((d) => {
+                const holiday = holidayByDate.get(d);
+                const off = isWeekend(d) || !!holiday;
+                return (
+                  <li
+                    key={d}
+                    title={holiday ?? (isWeekend(d) ? "Weekend — not counted" : "Counted as leave")}
+                    className={cn("rounded-md px-2 py-1", off ? "bg-white/60 text-slate-400 line-through" : "bg-white font-medium text-slate-700")}
+                  >
+                    {shortDay(d)}
+                    {holiday ? ` · ${holiday}` : ""}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           {calc && calc.days === 0 && <p className="mt-3 text-xs text-red-600">The selected dates are all weekends or holidays.</p>}
           {insufficient && (
             <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600">
@@ -175,12 +220,29 @@ export function ApplyLeaveForm({ types, holidays, today, minDate }: { types: App
           {calc && effectiveHalf && <p className="mt-3 text-xs text-slate-500">Half day ({session === "first" ? "first" : "second"} half) counts as 0.5 day.</p>}
         </div>
 
+        {clashes.length > 0 && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <p className="font-medium">These dates overlap leave you already have:</p>
+            <ul className="mt-1 list-disc pl-5 text-xs">
+              {clashes.map((c) => (
+                <li key={`${c.start}-${c.end}-${c.type}`}>
+                  {c.type}, {dateRange(c.start, c.end)}
+                  {c.halfDay ? ` (${c.session === "second" ? "second" : "first"} half)` : ""} — {c.status === "approved" ? "approved" : "waiting for approval"}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs">
+              Pick other dates, or cancel that request in <a href="/leave/details" className="font-medium underline">My leave history</a> first.
+            </p>
+          </div>
+        )}
+
         <Field label="Reason" htmlFor="reason" required>
           <Textarea id="reason" name="reason" rows={3} maxLength={1000} placeholder="Briefly describe the reason for your leave" required />
         </Field>
 
         <div className="flex justify-end">
-          <SubmitButton disabled={!calc || calc.days === 0 || insufficient || !type}>Apply Leave</SubmitButton>
+          <SubmitButton disabled={!calc || calc.days === 0 || insufficient || !type || clashes.length > 0}>Apply Leave</SubmitButton>
         </div>
       </div>
     </ActionForm>
