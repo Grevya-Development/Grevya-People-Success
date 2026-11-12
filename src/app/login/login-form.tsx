@@ -7,6 +7,7 @@ import { Input, Label } from "@/components/ui/form";
 import { signIn, requestPasswordReset } from "./actions";
 
 const DEMO = [
+  { label: "Super Admin", email: "admin@grevya.com" },
   { label: "HR Admin", email: "hr@grevya.com" },
   { label: "Manager", email: "kavin@grevya.com" },
   { label: "Employee", email: "priya@grevya.com" },
@@ -84,7 +85,7 @@ export function LoginForm({ next, showDemo }: { next?: string; showDemo: boolean
       {showDemo && (
         <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Demo accounts · password Grevya@123</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {DEMO.map((d) => (
               <button
                 key={d.email}
