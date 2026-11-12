@@ -1,6 +1,6 @@
 # People Success
 
-Grevya's employee portal — HRIS, Performance, Exit, Leave, Attendance, Payroll, Reimbursement, Learning, Recruit, Directory, HR Helpdesk, Declarations and an HR Admin console.
+Grevya's employee portal — HRIS, Performance, Exit, Leave, Attendance, Payroll, Reimbursement, Learning, Recruit, Directory, Declarations, Onboarding and an Admin console for HR. The HR Helpdesk now lives in the Service Desk app when `NEXT_PUBLIC_SERVICE_DESK_URL` is set.
 
 **Stack:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage, Row Level Security).
 
@@ -15,7 +15,16 @@ npm run seed                # demo organisation (add -- --reset to wipe & reseed
 npm run dev                 # http://localhost:3100
 ```
 
-Demo logins (password `Grevya@123`): `hr@grevya.com` (HR admin), `kavin@grevya.com` (manager), `priya@grevya.com` (employee). Every seeded employee can sign in with `<firstname>@grevya.com`.
+Demo logins (local / demo data only, password `Grevya@123`):
+
+| Login | Role | Lands on |
+|---|---|---|
+| `admin@grevya.com` | Super admin (accounts & roles) | Admin console |
+| `hr@grevya.com` | HR admin | Admin console |
+| `kavin@grevya.com` | Manager | Employee home |
+| `priya@grevya.com` | Employee | Employee home |
+
+Every seeded employee can sign in with `<firstname>@grevya.com`. Production users get a temporary password from HR (or a reset link) and must choose their own at first sign-in; HR can disable a login in **User Accounts & Roles**, which signs the person out.
 
 ## Connect your hosted Supabase project
 
@@ -61,10 +70,16 @@ Security is enforced in the database (Row Level Security + triggers), not just t
 
 - **Employees** see and act on their own records.
 - **Managers** (anyone with reports) also see and approve their reporting chain.
-- **HR admins** (`role = 'hr_admin'`) see and manage everything.
+- **HR admins** (`role = 'hr_admin'`) see and manage everything; **super admins** (`role = 'super_admin'`) also manage user accounts and roles. People who have left lose HR and manager rights automatically.
 - Approval statuses can only be set by an approver; side effects (leave balance updates, attendance on regularization approval, comp-off credits, exit clearance, notifications) run as database triggers.
 
-HR adds people in **HR Admin → Employees** and can create their login there. Anyone who signs up with an email that matches an employee record is linked automatically.
+## Admin console
+
+HR admins and super admins sign in to the **Admin console** (`/admin`) instead of the employee home. It has an admin-only menu (People, Time & Leave, Payroll & Expenses, Performance, Recruitment & Learning, Documents & Forms, Communication & Settings) and an organisation dashboard: headcount trend, attendance today, workforce mix, leave and claims charts, payroll cost, hiring pipeline, reviews, learning, approvals waiting, probation, onboarding, joiners and leavers.
+
+Admins are employees too: **My workspace** (header, sidebar user menu or mobile menu) switches to their own leave, payslips and requests, and **Admin console** switches back. The choice is kept in the `ps_view` cookie.
+
+HR adds people in **Admin console → People → Employees** and can create their login there. Anyone who signs up with an email that matches an employee record is linked automatically.
 
 ## Project layout
 
@@ -74,7 +89,8 @@ scripts/seed.mts          demo / minimal seed
 src/proxy.ts              session refresh + auth redirect
 src/lib/                  supabase clients, auth helpers, nav map, utils
 src/components/ui/        UI kit
-src/components/shell/     header, sidebar flyouts, search, notifications
+src/components/shell/     header, sidebar flyouts, search, notifications, view switch
+src/app/(portal)/admin/   admin console dashboard, accounts, org, announcements, add-ons
 src/app/(portal)/<module> one folder per module (pages, actions.ts, _components)
 docs/CONVENTIONS.md       coding conventions
 ```
